@@ -728,6 +728,8 @@ elif categorie == 'Machine Learning':
         img = tds[0].find("img")
         st.image(img.attrs['src'])
 
+
+
 # lien tuto streamlit
 # https://docs.streamlit.io/en/stable/getting_started.html
 
