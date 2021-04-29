@@ -621,7 +621,78 @@ elif categorie == 'Retrospective':
 
 
 elif categorie == 'Machine Learning':
-    st.title('Work in progress')
+    st.title('Machine Learning')
+    st.subheader('Recommandation de films')
+
+    # Model ML preparation
+    mov_db = load_data(ML_DB)
+
+    temp_db = mov_db.copy()
+    temp_db['averageRating'] = temp_db['averageRating'] * 10
+
+    temp_db['director'] = temp_db['director'].factorize()[0]
+    temp_db['main_role'] = temp_db['main_role'].factorize()[0]
+    temp_db['second_role'] = temp_db['second_role'].factorize()[0]
+    temp_db['third_role'] = temp_db['third_role'].factorize()[0]
+    temp_db['genres'] = temp_db['genres'].apply(lambda x: x.split(','))
+
+    temp_tab = temp_db.explode('genres')['genres'].str.get_dummies()
+    db = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['genres'])
+
+    mldb = db[['director', 'main_role', 'second_role', 'third_role', 'indice_MORE', 'startYear', 'numVotes', 'Drama',
+               'Comedy', 'Action', 'Thriller', 'Adventure', 'Animation', 'Biography', 'Crime', 'Documentary', 'Romance',
+               'Family', 'Sci-Fi', 'Fantasy', 'Film-Noir', 'History', 'Horror', 'Music', 'Musical',
+               'Mystery', 'News', 'Reality-TV', 'Short', 'Sport', 'War', 'Western', 'Adult', '\\N']]
+
+    mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
+    mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
+
+    mldb['averageRating'] = db['averageRating']
+
+    # Train model
+    X = mldb.drop(columns=['averageRating'])
+    y = mldb['averageRating']
+    modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
+
+    st.markdown(
+        f"""
+        Cet outil permet d'utiliser toute la puissance du *Machine Learning* pour vous proposer des films qui sont
+        le plus en proches de vos goûts.
+        
+        Afin de de vous faire une proposition, nous vous invitons à selectionner un de vos films favoris pour que 
+        l'outil MORE puisse l'analyser et vous proposer des films proches
+        parmis **unes selection de {mov_db.index[-1]} films**.
+        """
+    )
+
+    movie_selected = st.selectbox('Choisissez votre film :', mldb['title'])
+
+    #Show result
+    reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).loc[mov_db]
+
+    col1, col2, col3, col4 = st.beta_columns(4)
+    with col1:
+        st.markdown(mov_db.iloc[reco[1]])
+        page = urllib.request.urlopen('https://www.imdb.com/title/tt0000002/?ref_=adv_li_i')
+        htmlCode = page.read().decode('UTF-8')
+
+
+    with col2:
+
+
+'''
+        import urllib.request
+        from bs4 import BeautifulSoup
+        from gazpacho import Soup
+
+
+        soup = Soup(htmlCode)
+        tds = soup.find("div", {"class": "poster"})
+        # tds[1].find("strong").text
+        print(tds[0].find("a"))
+'''
+
+
 
 # lien tuto streamlit
 # https://docs.streamlit.io/en/stable/getting_started.html
