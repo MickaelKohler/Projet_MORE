@@ -1,17 +1,24 @@
+import math
+import time
 import streamlit as st
 import numpy as np
 import pandas as pd
-import math
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import preprocessing
 
+import urllib.request
+from gazpacho import Soup
+
 
 @st.cache
 def load_data(url):
     data = pd.read_csv(url)
-    data['indice MORE'] = ((data['Note'] * data['Votes']) / (data['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
+    data.rename(columns={'title': 'Titre', 'startYear': 'Année', 'genres': 'Genres', 'averageRating': 'Note',
+                         'numVotes': 'Votes', 'primaryName': 'Nom', 'ordering': 'Ordre', 'birthYear': 'Naissance',
+                         'deathYear': 'Décès'}, inplace=True)
+    data['indice_MORE'] = ((data['Note'] * data['Votes']) / (data['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
         math.sqrt).apply(lambda x: round(x, 2))
     return data
 
@@ -54,7 +61,7 @@ st.markdown("""
 st.sidebar.title('Navigation')
 
 categorie = st.sidebar.radio("Categorie", ('La Base de Données', 'Analyse Comparative', 'Femme et Cinéma',
-                                           'Retrospective', 'Machin Learning'))
+                                           'Retrospective', 'Machine Learning'))
 
 expander = st.sidebar.beta_expander("Sources")
 expander.markdown(
@@ -628,18 +635,18 @@ elif categorie == 'Machine Learning':
     mov_db = load_data(ML_DB)
 
     temp_db = mov_db.copy()
-    temp_db['averageRating'] = temp_db['averageRating'] * 10
+    temp_db['Note'] = temp_db['Note'] * 10
 
     temp_db['director'] = temp_db['director'].factorize()[0]
     temp_db['main_role'] = temp_db['main_role'].factorize()[0]
     temp_db['second_role'] = temp_db['second_role'].factorize()[0]
     temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-    temp_db['genres'] = temp_db['genres'].apply(lambda x: x.split(','))
+    temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
 
-    temp_tab = temp_db.explode('genres')['genres'].str.get_dummies()
-    db = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['genres'])
+    temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
+    db = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
 
-    mldb = db[['director', 'main_role', 'second_role', 'third_role', 'indice_MORE', 'startYear', 'numVotes', 'Drama',
+    mldb = db[['director', 'main_role', 'second_role', 'third_role', 'indice_MORE', 'Année', 'Votes', 'Drama',
                'Comedy', 'Action', 'Thriller', 'Adventure', 'Animation', 'Biography', 'Crime', 'Documentary', 'Romance',
                'Family', 'Sci-Fi', 'Fantasy', 'Film-Noir', 'History', 'Horror', 'Music', 'Musical',
                'Mystery', 'News', 'Reality-TV', 'Short', 'Sport', 'War', 'Western', 'Adult', '\\N']]
@@ -647,11 +654,11 @@ elif categorie == 'Machine Learning':
     mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
     mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
 
-    mldb['averageRating'] = db['averageRating']
+    mldb['Note'] = db['Note']
 
     # Train model
-    X = mldb.drop(columns=['averageRating'])
-    y = mldb['averageRating']
+    X = mldb.drop(columns=['Note'])
+    y = mldb['Note']
     modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
 
     st.markdown(
@@ -661,38 +668,65 @@ elif categorie == 'Machine Learning':
         
         Afin de de vous faire une proposition, nous vous invitons à selectionner un de vos films favoris pour que 
         l'outil MORE puisse l'analyser et vous proposer des films proches
-        parmis **unes selection de {mov_db.index[-1]} films**.
+        parmis **une selection de {mov_db.index[-1]} films**.
         """
     )
 
-    movie_selected = st.selectbox('Choisissez votre film :', mldb['title'])
+    movie_selected = st.selectbox('Choisissez votre film :', mov_db['Titre'])
+
+    my_bar = st.progress(0)
+    for percent_complete in range(100):
+        time.sleep(0.3)
+        my_bar.progress(percent_complete + 1)
 
     #Show result
-    reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).loc[mov_db]
+    reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False))
+    reco = reco.loc[mov_db[mov_db['Titre'] == movie_selected].index]
 
     col1, col2, col3, col4 = st.beta_columns(4)
     with col1:
-        st.markdown(mov_db.iloc[reco[1]])
-        page = urllib.request.urlopen('https://www.imdb.com/title/tt0000002/?ref_=adv_li_i')
+        reco_one = mov_db[mov_db.index == reco.iloc[0, 1]][['tconst', 'Titre']]
+        st.subheader(reco_one.iloc[0, 1])
+
+        page = urllib.request.urlopen('https://www.imdb.com/title/' + reco_one.iloc[0, 0] + '/?ref_=adv_li_i%27')
         htmlCode = page.read().decode('UTF-8')
-
-
-    with col2:
-
-
-'''
-        import urllib.request
-        from bs4 import BeautifulSoup
-        from gazpacho import Soup
-
-
         soup = Soup(htmlCode)
         tds = soup.find("div", {"class": "poster"})
-        # tds[1].find("strong").text
-        print(tds[0].find("a"))
-'''
+        img = tds[0].find("img")
+        st.image(img.attrs['src'])
 
+    with col2:
+        reco_two = mov_db[mov_db.index == reco.iloc[0, 2]][['tconst', 'Titre']]
+        st.subheader(reco_two.iloc[0, 1])
 
+        page = urllib.request.urlopen('https://www.imdb.com/title/' + reco_two.iloc[0, 0] + '/?ref_=adv_li_i%27')
+        htmlCode = page.read().decode('UTF-8')
+        soup = Soup(htmlCode)
+        tds = soup.find("div", {"class": "poster"})
+        img = tds[0].find("img")
+        st.image(img.attrs['src'])
+
+    with col3:
+        reco_three = mov_db[mov_db.index == reco.iloc[0, 3]][['tconst', 'Titre']]
+        st.subheader(reco_three.iloc[0, 1])
+
+        page = urllib.request.urlopen('https://www.imdb.com/title/' + reco_three.iloc[0, 0] + '/?ref_=adv_li_i%27')
+        htmlCode = page.read().decode('UTF-8')
+        soup = Soup(htmlCode)
+        tds = soup.find("div", {"class": "poster"})
+        img = tds[0].find("img")
+        st.image(img.attrs['src'])
+
+    with col4:
+        reco_four = mov_db[mov_db.index == reco.iloc[0, 4]][['tconst', 'Titre']]
+        st.subheader(reco_four.iloc[0, 1])
+
+        page = urllib.request.urlopen('https://www.imdb.com/title/' + reco_four.iloc[0, 0] + '/?ref_=adv_li_i%27')
+        htmlCode = page.read().decode('UTF-8')
+        soup = Soup(htmlCode)
+        tds = soup.find("div", {"class": "poster"})
+        img = tds[0].find("img")
+        st.image(img.attrs['src'])
 
 # lien tuto streamlit
 # https://docs.streamlit.io/en/stable/getting_started.html
