@@ -5,8 +5,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn import preprocessing
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.decomposition import PCA
 
 import urllib.request
 from gazpacho import Soup
@@ -18,7 +19,7 @@ def load_data(url):
     data.rename(columns={'title': 'Titre', 'startYear': 'Année', 'genres': 'Genres', 'averageRating': 'Note',
                          'numVotes': 'Votes', 'primaryName': 'Nom', 'ordering': 'Ordre', 'birthYear': 'Naissance',
                          'deathYear': 'Décès'}, inplace=True)
-    data['indice_MORE'] = ((data['Note'] * data['Votes']) / (data['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
+    data['indice MORE'] = ((data['Note'] * data['Votes']) / (data['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
         math.sqrt).apply(lambda x: round(x, 2))
     return data
 
@@ -61,7 +62,7 @@ st.markdown("""
 st.sidebar.title('Navigation')
 
 categorie = st.sidebar.radio("Categorie", ('La Base de Données', 'Analyse Comparative', 'Femme et Cinéma',
-                                           'Retrospective', 'Machine Learning', 'TEST'))
+                                           'Retrospective', 'Recommandation de films'))
 
 expander = st.sidebar.beta_expander("Sources")
 expander.markdown(
@@ -80,7 +81,7 @@ expander.markdown(
 # modifier selon la localisation de la BD
 REPRO_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/5229e2c46ed10881eb3b9e372cd4c0198c4b15d5/repro.zip'
 FR_MOV_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/fr_mov.csv'
-ML_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/5229e2c46ed10881eb3b9e372cd4c0198c4b15d5/mldb.csv'
+ML_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/mldb.csv'
 
 data = load_data(FR_MOV_DB)
 data_crew = load_data(REPRO_DB)
@@ -627,9 +628,9 @@ elif categorie == 'Retrospective':
     st.table(top_act.iloc[0:10])
 
 
-elif categorie == 'Machine Learning':
-    st.title('Machine Learning')
-    st.subheader('Recommandation de films')
+elif categorie == 'Recommandation de films':
+    st.title('Recommandation de films')
+    st.subheader('Laissez vous seduire par la magie du Machine Learning')
 
     # data
     mov_db = load_data(ML_DB)
@@ -645,103 +646,142 @@ elif categorie == 'Machine Learning':
         """
     )
 
-    movie_selected = st.selectbox('Choisissez votre film :', mov_db['Titre'])
+    with st.form(key='my_form'):
+        movie_selected = st.selectbox('Choisissez votre film :', mov_db['Titre'])
+        speed = st.checkbox('Activer le FastML')
+        st.markdown('Le mode _Fast Machine Learning_ permet de réduire fortement le temps de calcul, '
+                    'mais impacte la précision des recommandations.')
+        submit = st.form_submit_button(label='Submit')
 
-    # recommandation genre
+    if submit :
 
+        # recommandation genre
+        temp_db = mov_db.copy().sort_values('indice MORE')
+        temp_db['director'] = temp_db['director'].factorize()[0]
+        temp_db['main_role'] = temp_db['main_role'].factorize()[0]
+        temp_db['second_role'] = temp_db['second_role'].factorize()[0]
+        temp_db['third_role'] = temp_db['third_role'].factorize()[0]
+        temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
+        temp_db = temp_db[['Année', 'indice MORE', 'Votes',
+                           'director', 'main_role', 'second_role', 'third_role', 'Genres']]
+        temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
+        mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
 
-    st.markdown('---')
+        mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
+        mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
 
-    # recommendation MAIN_ACTOR
-    search = mov_db[mov_db['Titre'] == movie_selected]
-    st.write(search)
-    fil_data = mov_db[(mov_db['main_role'] == search.iloc[0, 9]) |
-                      (mov_db['second_role'] == search.iloc[0, 9]) |
-                      (mov_db['third_role'] == search.iloc[0, 9])].sort_values('indice_MORE').reset_index()
+        X = mldb
+        y = mov_db['Note'].round(0)
 
-    temp_db = fil_data.copy()
-    temp_db['director'] = temp_db['director'].factorize()[0]
-    temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-    temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-    temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-    temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-    temp_db = temp_db[['Année', 'indice_MORE', 'Note', 'Votes',
-                       'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-    temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-    mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
+        if speed:
+            pca = PCA(n_components=0.60).fit(X)
+            X = pca.transform(X)
 
-    mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-    mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
+        modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
+        reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).loc[mov_db[mov_db['Titre'] == movie_selected].index]
 
-    X = mldb
-    y = mldb['Note'].round(0)
-    modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
+        st.subheader(f'_Parce que vous appreciez **{movie_selected}**_')
+        cols = st.beta_columns(4)
+        for i, col in enumerate(cols):
+            reco_two = mov_db[mov_db.index == reco.iloc[0, i+1]][['tconst', 'Titre']]
+            col.write(reco_two.iloc[0, 1])
 
-    new_row = fil_data[fil_data['Titre'] == movie_selected]
+            page = urllib.request.urlopen('https://www.imdb.com/title/' + reco_two.iloc[0, 0] + '/?ref_=adv_li_i%27')
+            htmlCode = page.read().decode('UTF-8')
+            soup = Soup(htmlCode)
+            tds = soup.find("div", {"class": "poster"})
+            img = tds[0].find("img")
+            col.image(img.attrs['src'])
 
-    reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
+        st.markdown('---')
 
-    st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 9]}**_')
-    cols = st.beta_columns(4)
-    for i, col in enumerate(cols):
-        index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
-        col.subheader(index_mov.iloc[0, 1])
+        # recommendation cast
+        for cast_rang in range(8, 11):
+            search = mov_db[mov_db['Titre'] == movie_selected]
+            fil_data = mov_db[(mov_db['main_role'] == search.iloc[0, cast_rang]) |
+                              (mov_db['second_role'] == search.iloc[0, cast_rang]) |
+                              (mov_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
 
-        page = urllib.request.urlopen('https://www.imdb.com/title/' + index_mov.iloc[0, 0] + '/?ref_=adv_li_i%27')
-        htmlCode = page.read().decode('UTF-8')
-        soup = Soup(htmlCode)
-        tds = soup.find("div", {"class": "poster"})
-        img = tds[0].find("img")
-        col.image(img.attrs['src'])
+            if fil_data.shape[0] > 2:
+                temp_db = fil_data.copy()
+                temp_db['director'] = temp_db['director'].factorize()[0]
+                temp_db['main_role'] = temp_db['main_role'].factorize()[0]
+                temp_db['second_role'] = temp_db['second_role'].factorize()[0]
+                temp_db['third_role'] = temp_db['third_role'].factorize()[0]
+                temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
+                temp_db = temp_db[['Année', 'indice MORE', 'Note', 'Votes',
+                                   'director', 'main_role', 'second_role', 'third_role', 'Genres']]
+                temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
+                mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
 
-    # recommendation SECOND_ACTOR
-    search = mov_db[mov_db['Titre'] == movie_selected]
-    fil_data = mov_db[(mov_db['main_role'] == search.iloc[0, 10]) |
-                      (mov_db['second_role'] == search.iloc[0, 10]) |
-                      (mov_db['third_role'] == search.iloc[0, 10])].sort_values('indice_MORE').reset_index()
+                mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
+                mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
 
-    temp_db = fil_data.copy()
-    temp_db['director'] = temp_db['director'].factorize()[0]
-    temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-    temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-    temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-    temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-    temp_db = temp_db[['Année', 'indice_MORE', 'Note', 'Votes',
-                       'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-    temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-    mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
+                X = mldb
+                y = mldb['Note'].round(0)
+                modelMORE = KNeighborsClassifier(weights='distance',
+                                                 n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5 else 5).fit(X, y)
 
-    mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-    mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
+                new_row = fil_data[fil_data['Titre'] == movie_selected]
 
-    X = mldb
-    y = mldb['Note'].round(0)
-    modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
+                reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
 
-    new_row = fil_data[fil_data['Titre'] == movie_selected]
+                st.subheader(f'_Parce que vous appreciez **{search.iloc[0, cast_rang]}**_')
+                cols = st.beta_columns(fil_data.shape[0] - 1 if fil_data.shape[0] < 5 else 4)
+                for i, col in enumerate(cols):
+                    index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
+                    col.subheader(index_mov.iloc[0, 1])
 
-    reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
+                    page = urllib.request.urlopen('https://www.imdb.com/title/' + index_mov.iloc[0, 0] + '/?ref_=adv_li_i%27')
+                    htmlCode = page.read().decode('UTF-8')
+                    soup = Soup(htmlCode)
+                    tds = soup.find("div", {"class": "poster"})
+                    img = tds[0].find("img")
+                    col.image(img.attrs['src'])
 
-    st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 9]}**_')
-    cols = st.beta_columns(4)
-    for i, col in enumerate(cols):
-        index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
-        col.subheader(index_mov.iloc[0, 1])
+                st.markdown('---')
 
-        page = urllib.request.urlopen('https://www.imdb.com/title/' + index_mov.iloc[0, 0] + '/?ref_=adv_li_i%27')
-        htmlCode = page.read().decode('UTF-8')
-        soup = Soup(htmlCode)
-        tds = soup.find("div", {"class": "poster"})
-        img = tds[0].find("img")
-        col.image(img.attrs['src'])
+        # recommendation director
+        search = mov_db[mov_db['Titre'] == movie_selected]
+        fil_data = mov_db[mov_db['director'] == search.iloc[0, 7]].sort_values('indice MORE').reset_index()
 
-    # recommendation DIRECTOR
+        if fil_data.shape[0] > 2:
+            temp_db = fil_data.copy()
+            temp_db['director'] = temp_db['director'].factorize()[0]
+            temp_db['main_role'] = temp_db['main_role'].factorize()[0]
+            temp_db['second_role'] = temp_db['second_role'].factorize()[0]
+            temp_db['third_role'] = temp_db['third_role'].factorize()[0]
+            temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
+            temp_db = temp_db[['Année', 'indice MORE', 'Note', 'Votes',
+                               'director', 'main_role', 'second_role', 'third_role', 'Genres']]
+            temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
+            mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
 
+            mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
+            mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
 
+            X = mldb
+            y = mldb['Note'].round(0)
+            modelMORE = KNeighborsClassifier(weights='distance',
+                                             n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5 else 5).fit(X, y)
 
-elif categorie == 'TEST':
+            new_row = fil_data[fil_data['Titre'] == movie_selected]
 
-    st.title('Ceci est une zone de test')
+            reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
+
+            st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 7]}**_')
+            cols = st.beta_columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
+            for i, col in enumerate(cols):
+                index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
+                col.subheader(index_mov.iloc[0, 1])
+
+                page = urllib.request.urlopen('https://www.imdb.com/title/' + index_mov.iloc[0, 0] + '/?ref_=adv_li_i%27')
+                htmlCode = page.read().decode('UTF-8')
+                soup = Soup(htmlCode)
+                tds = soup.find("div", {"class": "poster"})
+                img = tds[0].find("img")
+                col.image(img.attrs['src'])
+
 
 # lien tuto streamlit
 # https://docs.streamlit.io/en/stable/getting_started.html
