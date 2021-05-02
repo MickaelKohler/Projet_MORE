@@ -1,7 +1,5 @@
 import math
-import time
 import streamlit as st
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -15,13 +13,13 @@ from gazpacho import Soup
 
 @st.cache
 def load_data(url):
-    data = pd.read_csv(url)
-    data.rename(columns={'title': 'Titre', 'startYear': 'Année', 'genres': 'Genres', 'averageRating': 'Note',
-                         'numVotes': 'Votes', 'primaryName': 'Nom', 'ordering': 'Ordre', 'birthYear': 'Naissance',
-                         'deathYear': 'Décès'}, inplace=True)
-    data['indice MORE'] = ((data['Note'] * data['Votes']) / (data['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
+    db = pd.read_csv(url)
+    db.rename(columns={'title': 'Titre', 'startYear': 'Année', 'genres': 'Genres', 'averageRating': 'Note',
+                       'numVotes': 'Votes', 'primaryName': 'Nom', 'ordering': 'Ordre', 'birthYear': 'Naissance',
+                       'deathYear': 'Décès'}, inplace=True)
+    db['indice MORE'] = ((db['Note'] * db['Votes']) / (db['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
         math.sqrt).apply(lambda x: round(x, 2))
-    return data
+    return db
 
 
 def fav_filter(dataframe):
@@ -42,11 +40,11 @@ st.markdown("""
     .important_info {
         font-size:30px;
         font-weight:bold;
-        color:steelblue;
+        color:deepskyblue;
     }
     .actress_stat {
         font-size:30px;
-        color:darkorange;
+        color:coral;
     }
     .sub_title {
         font-size:25px;
@@ -59,20 +57,28 @@ st.markdown("""
 ## sidebar ##
 #############
 
-st.sidebar.title('Navigation')
+st.sidebar.title('Projet MORE')
+st.sidebar.subheader('Navigation')
 
-categorie = st.sidebar.radio("Categorie", ('La Base de Données', 'Analyse Comparative', 'Femme et Cinéma',
-                                           'Retrospective', 'Recommandation de films'))
+categorie = st.sidebar.radio("Categorie", ('Introduction', 'Analyse Comparative', 'Femme et Cinéma',
+                                           'Les TOP par décennies', 'Quoi voir ?'))
+if categorie == 'Quoi voir ?':
+    sub_categorie = st.sidebar.radio("Machine Learning", ('Recommandation de films',
+                                                          'Restrospectives',
+                                                          'Probabilité que vous aimiez ce film'))
 
+st.sidebar.title(' ')
 expander = st.sidebar.beta_expander("Sources")
 expander.markdown(
     """
-    [Base de donnée imdb](https://www.imdb.com/interfaces/) : 
-    N'ont été retenus que les films ayant plus de 1000 votes.
+    [Base de donnée imdb](https://www.imdb.com/interfaces/) : N'ont été retenus que les films 
+    ayant été distribués en France.
 
     [Base de donnée Netflix](https://en.wikipedia.org/wiki/Lists_of_Netflix_original_films) : 
     Les films exclusifs à la plaforme Netflix ont été retirés.
     """)
+expander.info('Résiliation de la **Team MORE** : '
+              '_Alhem, Fanyme, Michael, Raphael, Soufiane_')
 
 ##########
 ## DATA ##
@@ -92,9 +98,39 @@ tick_min = data['Votes'].min().item()
 ## MAIN PAGE ##
 ###############
 
-if categorie == 'La Base de Données':
+if categorie == 'Introduction':
 
-    st.title('La Base de Données')
+    st.title('Projet MORE ')
+    st.subheader('Movie Recommandation programme')
+    st.title(" ")
+
+    st.markdown("""
+    Bienvenu dans le Projet MORE.
+    
+    Ce projet a pour objectif de fournir les outils d’analyse d’une base de données de films, 
+    afin de comprend les **indices clés** et de vous aider à la prise de décision. 
+    
+    Les deux premières parties vous mettent à disposition des **données comparatives sur le monde du cinéma** 
+    en se concentrant sur la comparaison entre les meilleurs films et la moyenne des films 
+    ou sur la place des femmes dans le cinéma. 
+    
+    La section suivante va vous générer des **TOP 10**, de films, d’acteurs ou de réalisateurs, 
+    compte tenu de critères que vous aurez déterminés (une décennie ou un genre). 
+    
+    Enfin, la dernière section met à profit la puissance du **Machine Learning** 
+    pour vous apporter les meilleures recommandations de films, 
+    que ce soit la recommandation de films proche qu’un film que vous avez aimé, 
+    la proposition de films dans le cadre d’une rétrospective et enfin, 
+    la probabilité que vous aimiez un films compte tenu d’une sélection de films que vous appréciez.
+    
+    Il ne vous reste plus qu’à explorer les sections !   
+    """)
+
+    st.title(" ")
+    st.subheader('I need MORE !')
+    col1, col2, col3 = st.beta_columns(3)
+    with col2 :
+        st.image('/Users/miko/Documents/Dev/sub.png')
 
 
 elif categorie == 'Analyse Comparative':
@@ -181,14 +217,14 @@ elif categorie == 'Analyse Comparative':
 
     fig = px.bar(percent_best, x=percent_best.index, y='Pourcentage',
                  title='<b>Proportion des films selon le filtre</b> (en pourcents)',
-                 color_discrete_sequence=['darkorange'])
+                 color_discrete_sequence=['coral'])
     fig.update_yaxes(title=None, tick0=True, nticks=12)
     fig.update_xaxes(title=None, nticks=12)
     fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
                       margin=dict(l=30, r=30, b=30))
     st.plotly_chart(fig, use_container_width=True)
     if show:
-        percent_best
+        st.dataframe(percent_best)
 
     st.markdown(
         """
@@ -211,15 +247,15 @@ elif categorie == 'Analyse Comparative':
     fig = px.line(mov_runtime, x=mov_runtime.index, y=["Durée", "Filtrés"],
                   title='<b>Durée moyenne</b> (en mintues)',
                   color_discrete_map={
-                      'Durée': 'steelblue',
-                      'Filtrés': 'darkorange'})
+                      'Durée': 'deepskyblue',
+                      'Filtrés': 'coral'})
     fig.update_yaxes(title=None, tick0=True, nticks=12)
     fig.update_xaxes(title=None, nticks=12)
     fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
                       margin=dict(l=30, r=30, b=30))
     st.plotly_chart(fig, use_container_width=True)
     if show:
-        mov_runtime
+        st.dataframe(mov_runtime)
 
     # Age
     age = data_crew[(data_crew['category'].isin(['actor', 'actress'])) & (data_crew['Naissance'] != '\\N')]
@@ -232,15 +268,15 @@ elif categorie == 'Analyse Comparative':
     fig = px.bar(age_chart, x=age_chart.index, y=["Age", "Filtrés"], barmode='group',
                  title='<b>Age moyen des acteurs</b> (en années)',
                  color_discrete_map={
-                     'Age': 'steelblue',
-                     'Filtrés': 'darkorange'})
+                     'Age': 'deepskyblue',
+                     'Filtrés': 'coral'})
     fig.update_yaxes(title=None, nticks=10)
     fig.update_xaxes(title=None, nticks=12)
     fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
                       margin=dict(l=30, r=30, b=30))
     st.plotly_chart(fig, use_container_width=True)
     if show:
-        age_chart
+        st.dataframe(age_chart)
 
 
 elif categorie == 'Femme et Cinéma':
@@ -277,7 +313,7 @@ elif categorie == 'Femme et Cinéma':
                               'xanchor': 'center',
                               'yanchor': 'middle'},
                           margin=dict(l=30, r=30, b=30, t=70))
-        fig.update_traces(textfont_size=20, marker=dict(colors=['steelblue', 'darkorange'],
+        fig.update_traces(textfont_size=20, marker=dict(colors=['deepskyblue', 'coral'],
                                                         line=dict(color='#000000', width=1)))
         fig.update_traces(textposition='inside', textinfo='percent+label')
         st.plotly_chart(fig, use_container_width=True)
@@ -309,8 +345,8 @@ elif categorie == 'Femme et Cinéma':
         x=percent.index,
         name="Acteur",
         marker=dict(
-            color='steelblue',
-            line=dict(color='steelblue', width=0.05)
+            color='deepskyblue',
+            line=dict(color='deepskyblue', width=0.05)
         )
     ))
     fig.add_trace(go.Bar(
@@ -318,8 +354,8 @@ elif categorie == 'Femme et Cinéma':
         x=percent.index,
         name="Actrice",
         marker=dict(
-            color='darkorange',
-            line=dict(color='darkorange', width=0.05)
+            color='coral',
+            line=dict(color='coral', width=0.05)
         )
     ))
     fig.update_layout(
@@ -369,7 +405,7 @@ elif categorie == 'Femme et Cinéma':
         hoverdistance=100,
         spikedistance=1000,
         margin=dict(l=30, r=30, b=30, t=70),
-        colorway=['steelblue', 'darkorange', 'tomato'],
+        colorway=['deepskyblue', 'coral', 'lightgreen'],
         xaxis=dict(
             title=None,
             nticks=12,
@@ -428,127 +464,134 @@ elif categorie == 'Femme et Cinéma':
         max_rate, max_pop = 10, tick_max
         show = st.checkbox('Montre moi la data')
 
-    # proportion per movies
-    col1, col2 = st.beta_columns(2)
-    with col1:
+    try:
+        # proportion per movies
+        col1, col2 = st.beta_columns(2)
+        with col1:
 
-        # Mean percent actress in each movie
-        per_mov = actors.groupby(['Titre', 'category']).count()['characters'].unstack().fillna(0.0)
-        per_mov['Proportion Actrices'] = (per_mov['actress'] * 100) / (per_mov['actress'] + per_mov['actor'])
-        per_mov['Proportion Acteurs'] = (per_mov['actor'] * 100) / (per_mov['actress'] + per_mov['actor'])
+            # Mean percent actress in each movie
+            per_mov = actors.groupby(['Titre', 'category']).count()['characters'].unstack().fillna(0.0)
+            per_mov['Proportion Actrices'] = (per_mov['actress'] * 100) / (per_mov['actress'] + per_mov['actor'])
+            per_mov['Proportion Acteurs'] = (per_mov['actor'] * 100) / (per_mov['actress'] + per_mov['actor'])
 
-        top_per_mov = fav_filter(actors).groupby(['Titre', 'category']).count()['characters'].unstack().fillna(0.0)
-        top_per_mov['Proportion Actrices'] = (top_per_mov['actress'] * 100) / (
-                top_per_mov['actress'] + top_per_mov['actor'])
-        top_per_mov['Proportion Acteurs'] = (top_per_mov['actor'] * 100) / (
-                top_per_mov['actress'] + top_per_mov['actor'])
+            top_per_mov = fav_filter(actors).groupby(['Titre', 'category']).count()['characters'].unstack().fillna(0.0)
+            top_per_mov['Proportion Actrices'] = (top_per_mov['actress'] * 100) / (
+                    top_per_mov['actress'] + top_per_mov['actor'])
+            top_per_mov['Proportion Acteurs'] = (top_per_mov['actor'] * 100) / (
+                    top_per_mov['actress'] + top_per_mov['actor'])
 
-        final = pd.concat([pd.DataFrame(per_mov.mean()).T, pd.DataFrame(top_per_mov.mean()).T]).reset_index().iloc[:,
-                1:].rename(index={0: 'Global', 1: 'Filtré'})
+            final = pd.concat([pd.DataFrame(per_mov.mean()).T, pd.DataFrame(top_per_mov.mean()).T])
+            final = final.reset_index().iloc[:, 1:].rename(index={0: 'Global', 1: 'Filtré'})
 
-        fig = px.bar(final, x=final.index, y=["Proportion Actrices", "Proportion Acteurs"], barmode='group',
-                     title="<b>Proportion moyenne d'actrices dans les films</b>",
-                     color_discrete_map={'Proportion Acteurs': 'steelblue', 'Proportion Actrices': 'darkorange'})
-        fig.update_yaxes(title=None, showticklabels=False, range=[0, 85], showgrid=False)
-        fig.update_xaxes(title=None, nticks=12)
-        fig.update_traces(texttemplate='%{text:.2s}%', textposition='outside')
-        fig.update_layout(showlegend=True, font_family='IBM Plex Sans',
-                          uniformtext_minsize=14, uniformtext_mode='hide',
-                          margin=dict(l=10, r=10, b=10),
-                          plot_bgcolor='rgba(0,0,0,0)',
-                          legend=dict(
-                              x=0,
-                              y=1,
-                              traceorder="normal",
-                              bgcolor='rgba(0,0,0,0)',
+            fig = px.bar(final, x=final.index, y=["Proportion Actrices", "Proportion Acteurs"], barmode='group',
+                         title="<b>Proportion moyenne d'actrices dans les films</b>",
+                         color_discrete_map={'Proportion Acteurs': 'deepskyblue', 'Proportion Actrices': 'coral'})
+            fig.update_yaxes(title=None, showticklabels=False, range=[0, 90], showgrid=False)
+            fig.update_xaxes(title=None, nticks=12)
+            fig.update_traces(texttemplate='%{text:.2s}%', textposition='outside')
+            fig.update_layout(showlegend=True, font_family='IBM Plex Sans',
+                              uniformtext_minsize=14, uniformtext_mode='hide',
+                              margin=dict(l=10, r=10, b=10),
+                              plot_bgcolor='rgba(0,0,0,0)',
+                              legend=dict(
+                                  x=0,
+                                  y=1,
+                                  traceorder="normal",
+                                  bgcolor='rgba(0,0,0,0)',
+                                  font=dict(
+                                      size=12)))
+            texts = [final["Proportion Actrices"], final["Proportion Acteurs"]]
+            for i, t in enumerate(texts):
+                fig.data[i].text = t
+                fig.data[i].textposition = 'outside'
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            best_actors = fav_filter(actors)
+            nb_vote_W = best_actors[(best_actors['category'] == 'actress') &
+                                    (best_actors['Ordre'] == 1)].mean().iloc[2]
+            nb_votes_M = best_actors[(best_actors['category'] == 'actor') &
+                                     (best_actors['Ordre'] == 1)].mean().iloc[2]
+
+            st.title(" ")
+            st.markdown(
+                f"""
+            Si peu de films n'ont aucune femme dans leur casting, 
+            on peut constater que les actrices sont généralement placées en retrait
+            et interviennent surtout pour des seconds rôles.
+    
+            Un **filtre**, ci dessus, permet de changer la popularité des films étudiés,
+            et de mettre en avant l’aggravation des inégalités 
+            dès lors qu’on se rapproche des films les plus populaires.
+    
+            La popularité se ressent aussi au niveau du nombre de votes 
+            qui est inférieur dès lors que l'actrice tient le role principal.
+    
+            Pour un premier role, on constate en moyenne **{round(nb_vote_W) if nb_vote_W > 0 else 0 } votes 
+            pour une actrice**, contre **{round(nb_votes_M)} votes pour un acteur**, 
+            soit un **nombre de votre inférieur de 
+            {round(100 - ((nb_vote_W * 100) / nb_votes_M)) if nb_vote_W > 0 else 100 } %**.
+            """)
+
+        col1, col2 = st.beta_columns(2)
+        with col1:
+            best_actors = fav_filter(actors)
+            percent = best_actors[best_actors['Ordre'] == 1].value_counts('category', normalize=True)
+
+            fig = go.Figure(data=[go.Pie(labels=percent.index, values=percent, pull=[0.2, 0])])
+            fig.update_layout(showlegend=False,
                               font=dict(
-                                  size=12)))
-        texts = [final["Proportion Actrices"], final["Proportion Acteurs"]]
-        for i, t in enumerate(texts):
-            fig.data[i].text = t
-            fig.data[i].textposition = 'outside'
-        st.plotly_chart(fig, use_container_width=True)
+                                  family="IBM Plex Sans",
+                                  size=10),
+                              title={
+                                  'text': "Proportion d'actrices ayant le premier rôle",
+                                  'y': 0.02,
+                                  'x': 0.48,
+                                  'xanchor': 'center',
+                                  'yanchor': 'bottom'},
+                              margin=dict(l=20, r=60, b=60, t=60))
+            fig.update_traces(textfont_size=20, marker=dict(colors=['deepskyblue', 'coral'],
+                                                            line=dict(color='#000000', width=1)))
+            st.plotly_chart(fig, use_container_width=True)
 
-    with col2:
-        best_actors = fav_filter(actors)
-        nb_vote_W = best_actors[(best_actors['category'] == 'actress') &
-                                (best_actors['Ordre'] == 1)].mean().iloc[2]
-        nb_votes_M = best_actors[(best_actors['category'] == 'actor') &
-                                 (best_actors['Ordre'] == 1)].mean().iloc[2]
+        with col2:
+            raw_order = pd.DataFrame(best_actors[(best_actors['category'].isin(['actress'])) &
+                                                 (best_actors['Ordre'] < 5)].value_counts('Ordre',
+                                                                                          normalize=True).sort_index())
+            raw_order.rename(columns={0: 'Actrices'}, inplace=True)
+            raw_order['Acteurs'] = best_actors[(best_actors['category'].isin(['actor'])) &
+                                               (best_actors['Ordre'] < 5)].value_counts('Ordre',
+                                                                                        normalize=True).sort_index()
+            raw_order = raw_order.apply(lambda x: x * 100).round(2)
 
-        st.title(" ")
-        st.markdown(
-            f"""
-        Si peu de films n'ont aucune femme dans leur casting, 
-        on peut constater que les actrices sont généralement placées en retrait
-        et interviennent surtout pour des seconds rôles.
+            fig = px.bar(raw_order, x=raw_order.index, y=["Actrices", "Acteurs"], barmode='group',
+                         title="<b>A quel rang se trouve les actrices et acteurs ?</b>",
+                         color_discrete_map={'Acteurs': 'deepskyblue', 'Actrices': 'coral'})
+            fig.update_yaxes(title='pourcents')
+            fig.update_xaxes(title='Du rôle principal au second rôle (une couleur est égale à 100%)')
+            fig.update_traces(texttemplate='%{text:.2s}%', textposition='outside')
+            fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
+                              margin=dict(l=0, r=0, b=0))
+            texts = [raw_order["Actrices"], raw_order["Acteurs"]]
+            for i, t in enumerate(texts):
+                fig.data[i].text = t
+                fig.data[i].textposition = 'outside'
+            st.plotly_chart(fig, use_container_width=True)
 
-        Un **filtre**, ci dessus, permet de changer la popularité des films étudiés,
-        et de mettre en avant l’aggravation des inégalités dès lors qu’on se rapproche des films les plus populaires.
+        if show:
+            st.title('')
+            st.markdown('**Détail des films de la selection**')
+            st.markdown('Le role principal est tenu par une actrice : ')
+            st.dataframe(best_actors[(best_actors['category'] == 'actress') & (best_actors['Ordre'] == 1)])
+            st.markdown('Le role principal est tenu par un acteur : ')
+            st.dataframe(best_actors[(best_actors['category'] == 'actor') & (best_actors['Ordre'] == 1)])
+    except KeyError:
+        st.error("Cette configuration ne fait plus apparaitre d'actrices dans le classement. "
+                 "Les rôles ne sont tenus que par des hommes.")
 
-        La popularité se ressent aussi au niveau du nombre de votes 
-        qui est inférieur dès lors que l'actrice tient le role principal.
 
-        Pour un premier role, on constate en moyenne **{round(nb_vote_W)} votes pour une actrice**,
-        contre **{round(nb_votes_M)} votes pour un acteur**, soit un **nombre de votre inférieur de
-        {round(100 - ((nb_vote_W * 100) / nb_votes_M))} %**.
-        """)
-
-    col1, col2 = st.beta_columns(2)
-    with col1:
-        best_actors = fav_filter(actors)
-        percent = best_actors[best_actors['Ordre'] == 1].value_counts('category', normalize=True)
-
-        fig = go.Figure(data=[go.Pie(labels=percent.index, values=percent, pull=[0.2, 0])])
-        fig.update_layout(showlegend=False,
-                          font=dict(
-                              family="IBM Plex Sans",
-                              size=10),
-                          title={
-                              'text': "Proportion d'actrices ayant le premier rôle",
-                              'y': 0.02,
-                              'x': 0.48,
-                              'xanchor': 'center',
-                              'yanchor': 'bottom'},
-                          margin=dict(l=20, r=60, b=60, t=60))
-        fig.update_traces(textfont_size=20, marker=dict(colors=['steelblue', 'darkorange'],
-                                                        line=dict(color='#000000', width=1)))
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-        raw_order = pd.DataFrame(best_actors[(best_actors['category'].isin(['actress'])) &
-                                             (best_actors['Ordre'] < 5)].value_counts('Ordre',
-                                                                                      normalize=True).sort_index()).rename(
-            columns={0: 'Actrices'})
-        raw_order['Acteurs'] = best_actors[(best_actors['category'].isin(['actor'])) &
-                                           (best_actors['Ordre'] < 5)].value_counts('Ordre',
-                                                                                    normalize=True).sort_index()
-        raw_order = raw_order.apply(lambda x: x * 100).round(2)
-
-        fig = px.bar(raw_order, x=raw_order.index, y=["Actrices", "Acteurs"], barmode='group',
-                     title="<b>A quel rang se trouve les actrices et acteurs ?</b>",
-                     color_discrete_map={'Acteurs': 'steelblue', 'Actrices': 'darkorange'})
-        fig.update_yaxes(title='pourcents')
-        fig.update_xaxes(title='Du rôle principal au second rôle (une couleur est égale à 100%)')
-        fig.update_traces(texttemplate='%{text:.2s}%', textposition='outside')
-        fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
-                          margin=dict(l=0, r=0, b=0))
-        texts = [raw_order["Actrices"], raw_order["Acteurs"]]
-        for i, t in enumerate(texts):
-            fig.data[i].text = t
-            fig.data[i].textposition = 'outside'
-        st.plotly_chart(fig, use_container_width=True)
-
-    if show:
-        st.title('')
-        st.markdown('**Détail des films de la selection**')
-        st.markdown('Le role principal est tenu par une actrice : ')
-        best_actors[(best_actors['category'] == 'actress') & (best_actors['Ordre'] == 1)]
-        st.markdown('Le role principal est tenu par un acteur : ')
-        best_actors[(best_actors['category'] == 'actor') & (best_actors['Ordre'] == 1)]
-
-elif categorie == 'Retrospective':
-    st.title('Retrospective par décennie')
+elif categorie == 'Les TOP par décennies':
+    st.title('Les TOP par décennies')
 
     st.write("""
     Classement selon les données présentes sur la platforme **imbd**
@@ -573,7 +616,7 @@ elif categorie == 'Retrospective':
                       "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 40) "
                       "plus le film est populaire. "
                       "Pour les autres catégories que les films, c'est la moyenne des indices sur la décennie "
-                      "selectionnée qui est calculé."
+                      "selectionnée qui est calculée."
                       )
 
     filtered_data = data[(data['Année'] >= start_year) & (data['Année'] < stop_year)]
@@ -628,79 +671,129 @@ elif categorie == 'Retrospective':
     st.table(top_act.iloc[0:10])
 
 
-elif categorie == 'Recommandation de films':
-    st.title('Recommandation de films')
-    st.subheader('Laissez vous seduire par la magie du Machine Learning')
+elif categorie == 'Quoi voir ?':
+    if sub_categorie == 'Recommandation de films':
+        st.title('Recommandation de films')
+        st.subheader('Laissez vous seduire par la magie du Machine Learning')
 
-    # data
-    mov_db = load_data(ML_DB)
+        # data
+        mov_db = load_data(ML_DB)
 
-    st.markdown(
-        f"""
-        Cet outil permet d'utiliser toute la puissance du *Machine Learning* pour vous proposer des films qui sont
-        le plus en proches de vos goûts.
+        st.markdown(
+            f"""
+            Cet outil permet d'utiliser toute la puissance du *Machine Learning* pour vous proposer des films qui sont
+            le plus en proches de vos goûts.
+    
+            Afin de de vous faire une proposition, nous vous invitons à selectionner un de vos films favoris pour que 
+            l'outil MORE puisse l'analyser et vous proposer des films proches
+            parmis **une selection de {mov_db.index[-1]} films**.
+            """
+        )
 
-        Afin de de vous faire une proposition, nous vous invitons à selectionner un de vos films favoris pour que 
-        l'outil MORE puisse l'analyser et vous proposer des films proches
-        parmis **une selection de {mov_db.index[-1]} films**.
-        """
-    )
+        with st.form(key='my_form'):
+            movie_selected = st.selectbox('Choisissez votre film :', mov_db['Titre'])
+            speed = st.checkbox('Activer le FastML')
+            st.markdown('Le mode _Fast Machine Learning_ permet de réduire fortement le temps de calcul, '
+                        'mais impacte la précision des recommandations.')
+            submit = st.form_submit_button(label='Rechercher')
 
-    with st.form(key='my_form'):
-        movie_selected = st.selectbox('Choisissez votre film :', mov_db['Titre'])
-        speed = st.checkbox('Activer le FastML')
-        st.markdown('Le mode _Fast Machine Learning_ permet de réduire fortement le temps de calcul, '
-                    'mais impacte la précision des recommandations.')
-        submit = st.form_submit_button(label='Submit')
+        if submit:
 
-    if submit :
+            # recommandation genre
+            temp_db = mov_db.copy().sort_values('indice MORE')
+            temp_db['director'] = temp_db['director'].factorize()[0]
+            temp_db['main_role'] = temp_db['main_role'].factorize()[0]
+            temp_db['second_role'] = temp_db['second_role'].factorize()[0]
+            temp_db['third_role'] = temp_db['third_role'].factorize()[0]
+            temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
+            temp_db = temp_db[['Année', 'indice MORE', 'Votes',
+                               'director', 'main_role', 'second_role', 'third_role', 'Genres']]
+            temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
+            mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
 
-        # recommandation genre
-        temp_db = mov_db.copy().sort_values('indice MORE')
-        temp_db['director'] = temp_db['director'].factorize()[0]
-        temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-        temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-        temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-        temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-        temp_db = temp_db[['Année', 'indice MORE', 'Votes',
-                           'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-        temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-        mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
+            mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
+            mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
 
-        mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-        mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
+            X = mldb
+            y = mov_db['Note'].round(0)
 
-        X = mldb
-        y = mov_db['Note'].round(0)
+            if speed:
+                pca = PCA(n_components=0.60).fit(X)
+                X = pca.transform(X)
 
-        if speed:
-            pca = PCA(n_components=0.60).fit(X)
-            X = pca.transform(X)
+            modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
+            reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False))
+            reco = reco.loc[mov_db[mov_db['Titre'] == movie_selected].index]
 
-        modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
-        reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).loc[mov_db[mov_db['Titre'] == movie_selected].index]
+            st.subheader(f'_Parce que vous appreciez **{movie_selected}**_')
+            cols = st.beta_columns(4)
+            for i, col in enumerate(cols):
+                reco_two = mov_db[mov_db.index == reco.iloc[0, i+1]][['tconst', 'Titre']]
+                col.write(reco_two.iloc[0, 1])
 
-        st.subheader(f'_Parce que vous appreciez **{movie_selected}**_')
-        cols = st.beta_columns(4)
-        for i, col in enumerate(cols):
-            reco_two = mov_db[mov_db.index == reco.iloc[0, i+1]][['tconst', 'Titre']]
-            col.write(reco_two.iloc[0, 1])
+                page = urllib.request.urlopen('https://www.imdb.com/title/' +
+                                              reco_two.iloc[0, 0] +
+                                              '/?ref_=adv_li_i%27')
+                htmlCode = page.read().decode('UTF-8')
+                soup = Soup(htmlCode)
+                tds = soup.find("div", {"class": "poster"})
+                img = tds[0].find("img")
+                col.image(img.attrs['src'])
 
-            page = urllib.request.urlopen('https://www.imdb.com/title/' + reco_two.iloc[0, 0] + '/?ref_=adv_li_i%27')
-            htmlCode = page.read().decode('UTF-8')
-            soup = Soup(htmlCode)
-            tds = soup.find("div", {"class": "poster"})
-            img = tds[0].find("img")
-            col.image(img.attrs['src'])
+            st.markdown('---')
 
-        st.markdown('---')
+            # recommendation cast
+            for cast_rang in range(8, 11):
+                search = mov_db[mov_db['Titre'] == movie_selected]
+                fil_data = mov_db[(mov_db['main_role'] == search.iloc[0, cast_rang]) |
+                                  (mov_db['second_role'] == search.iloc[0, cast_rang]) |
+                                  (mov_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
 
-        # recommendation cast
-        for cast_rang in range(8, 11):
+                if fil_data.shape[0] > 2:
+                    temp_db = fil_data.copy()
+                    temp_db['director'] = temp_db['director'].factorize()[0]
+                    temp_db['main_role'] = temp_db['main_role'].factorize()[0]
+                    temp_db['second_role'] = temp_db['second_role'].factorize()[0]
+                    temp_db['third_role'] = temp_db['third_role'].factorize()[0]
+                    temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
+                    temp_db = temp_db[['Année', 'indice MORE', 'Note', 'Votes',
+                                       'director', 'main_role', 'second_role', 'third_role', 'Genres']]
+                    temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
+                    mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1)
+                    mldb.drop(columns=['Genres'], inplace=True)
+
+                    mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
+                    mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
+
+                    X = mldb
+                    y = mldb['Note'].round(0)
+                    modelMORE = KNeighborsClassifier(weights='distance',
+                                                     n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5else 5).fit(X, y)
+
+                    new_row = fil_data[fil_data['Titre'] == movie_selected]
+
+                    reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
+
+                    st.subheader(f'_Parce que vous appreciez **{search.iloc[0, cast_rang]}**_')
+                    cols = st.beta_columns(fil_data.shape[0] - 1 if fil_data.shape[0] < 5 else 4)
+                    for i, col in enumerate(cols):
+                        index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
+                        col.subheader(index_mov.iloc[0, 1])
+
+                        page = urllib.request.urlopen('https://www.imdb.com/title/' +
+                                                      index_mov.iloc[0, 0] +
+                                                      '/?ref_=adv_li_i%27')
+                        htmlCode = page.read().decode('UTF-8')
+                        soup = Soup(htmlCode)
+                        tds = soup.find("div", {"class": "poster"})
+                        img = tds[0].find("img")
+                        col.image(img.attrs['src'])
+
+                    st.markdown('---')
+
+            # recommendation director
             search = mov_db[mov_db['Titre'] == movie_selected]
-            fil_data = mov_db[(mov_db['main_role'] == search.iloc[0, cast_rang]) |
-                              (mov_db['second_role'] == search.iloc[0, cast_rang]) |
-                              (mov_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
+            fil_data = mov_db[mov_db['director'] == search.iloc[0, 7]].sort_values('indice MORE').reset_index()
 
             if fil_data.shape[0] > 2:
                 temp_db = fil_data.copy()
@@ -726,61 +819,20 @@ elif categorie == 'Recommandation de films':
 
                 reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
 
-                st.subheader(f'_Parce que vous appreciez **{search.iloc[0, cast_rang]}**_')
-                cols = st.beta_columns(fil_data.shape[0] - 1 if fil_data.shape[0] < 5 else 4)
+                st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 7]}** à la réalisation_')
+                cols = st.beta_columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
                 for i, col in enumerate(cols):
                     index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
                     col.subheader(index_mov.iloc[0, 1])
 
-                    page = urllib.request.urlopen('https://www.imdb.com/title/' + index_mov.iloc[0, 0] + '/?ref_=adv_li_i%27')
+                    page = urllib.request.urlopen('https://www.imdb.com/title/' +
+                                                  index_mov.iloc[0, 0] +
+                                                  '/?ref_=adv_li_i%27')
                     htmlCode = page.read().decode('UTF-8')
                     soup = Soup(htmlCode)
                     tds = soup.find("div", {"class": "poster"})
                     img = tds[0].find("img")
                     col.image(img.attrs['src'])
-
-                st.markdown('---')
-
-        # recommendation director
-        search = mov_db[mov_db['Titre'] == movie_selected]
-        fil_data = mov_db[mov_db['director'] == search.iloc[0, 7]].sort_values('indice MORE').reset_index()
-
-        if fil_data.shape[0] > 2:
-            temp_db = fil_data.copy()
-            temp_db['director'] = temp_db['director'].factorize()[0]
-            temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-            temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-            temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-            temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-            temp_db = temp_db[['Année', 'indice MORE', 'Note', 'Votes',
-                               'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-            temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-            mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
-
-            mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-            mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
-
-            X = mldb
-            y = mldb['Note'].round(0)
-            modelMORE = KNeighborsClassifier(weights='distance',
-                                             n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5 else 5).fit(X, y)
-
-            new_row = fil_data[fil_data['Titre'] == movie_selected]
-
-            reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
-
-            st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 7]}**_')
-            cols = st.beta_columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
-            for i, col in enumerate(cols):
-                index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
-                col.subheader(index_mov.iloc[0, 1])
-
-                page = urllib.request.urlopen('https://www.imdb.com/title/' + index_mov.iloc[0, 0] + '/?ref_=adv_li_i%27')
-                htmlCode = page.read().decode('UTF-8')
-                soup = Soup(htmlCode)
-                tds = soup.find("div", {"class": "poster"})
-                img = tds[0].find("img")
-                col.image(img.attrs['src'])
 
 
 # lien tuto streamlit
