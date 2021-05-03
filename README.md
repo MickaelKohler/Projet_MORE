@@ -1,4 +1,4 @@
-# Projet_MORE
+# Projet MORE
 _Streamlit web app for data analyse_
 
 
