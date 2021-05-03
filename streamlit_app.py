@@ -3,13 +3,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn import preprocessing
+from sklearn.preprocessing import PowerTransformer
+from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
-
 import urllib.request
 from gazpacho import Soup
 
+
+###############
+## Fonctions ##
+###############
 
 @st.cache
 def load_data(url):
@@ -19,6 +23,7 @@ def load_data(url):
                        'deathYear': 'Décès'}, inplace=True)
     db['indice MORE'] = ((db['Note'] * db['Votes']) / (db['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
         math.sqrt).apply(lambda x: round(x, 2))
+
     return db
 
 
@@ -28,11 +33,128 @@ def fav_filter(dataframe):
                      (dataframe['Note'].between(min_rate, max_rate))]
 
 
+def ml_data(data):
+    data['director'] = data['director'].factorize()[0]
+    data['main_role'] = data['main_role'].factorize()[0]
+    data['second_role'] = data['second_role'].factorize()[0]
+    data['third_role'] = data['third_role'].factorize()[0]
+    data['Genres'] = data['Genres'].apply(lambda x: x.split(','))
+    data = data[['Année', 'indice MORE', 'Votes', 'director',
+                 'main_role', 'second_role', 'third_role', 'Genres']]
+    temp = data.explode('Genres')['Genres'].str.get_dummies()
+    mldb = pd.concat([data, temp.groupby(temp.index).agg('sum')], axis=1).drop(columns=['Genres'])
+    power = PowerTransformer().fit(mldb)
+    return power.transform(mldb)
+
+
+def ml_rating(data):
+    data['director'] = data['director'].factorize()[0]
+    data['main_role'] = data['main_role'].factorize()[0]
+    data['second_role'] = data['second_role'].factorize()[0]
+    data['third_role'] = data['third_role'].factorize()[0]
+    data['Genres'] = data['Genres'].apply(lambda x: x.split(','))
+    data = data[['Année', 'indice MORE', 'Votes', 'Note', 'director',
+                 'main_role', 'second_role', 'third_role', 'Genres']]
+    temp = data.explode('Genres')['Genres'].str.get_dummies()
+    mldb = pd.concat([data, temp.groupby(temp.index).agg('sum')], axis=1).drop(columns=['Genres'])
+    power = PowerTransformer().fit(mldb)
+    return power.transform(mldb)
+
+
+def picture(index):
+    page = urllib.request.urlopen('https://www.imdb.com/title/' +
+                                  index.iloc[0, 0] +
+                                  '/?ref_=adv_li_i%27')
+    htmlCode = page.read().decode('UTF-8')
+    soup = Soup(htmlCode)
+    tds = soup.find("div", {"class": "poster"})
+    img = tds[0].find("img")
+    return img.attrs['src']
+
+
+class Retrospective:
+    def __init__(self, film, type_retro):
+        """
+            A l'initialisation l'utilisateur choisit un film et un type de rétro, auxquels on ajoute
+            un réalisateur, une année de sortie, et un (ou des) genres
+        """
+        self.film = film
+        self.tr = type_retro
+        self.real = mov_RL[mov_RL["Titre"] == film]["director"].values[0]
+        self.annee = mov_RL[mov_RL["Titre"] == film]["Année"].values[0]
+        self.genres = mov_RL[mov_RL["Titre"] == film]["Genres"].values[0]
+
+    def __repr__(self):
+        """
+           Méthode cosmétique pour afficher tous les attributs d'une rétro de façon propre
+        """
+        return (f'Film : {self.film} - Réalisateur : {self.real} - Sortie : {self.annee} - '
+                f'Genre(s) : {self.genres} - Rétro souhaitée : {self.tr}')
+
+    def propo_retro(self):
+        """
+            Cette fonction va proposer des rétro en fonction du type choisie à l'initiatlisation de la classe.
+        """
+        DF_retro = self.filtre_retro()
+        if self.tr == "réalisateur":
+            DF_retro = self.quatre_tests(DF_retro)
+        elif self.tr == "décennie":
+            t_genres = self.genres
+            if len(t_genres) > 1:
+                # s'il y a plus d'un genre, on filtre les films qui partagent les deux derniers genres
+                DF_retro = DF_retro[(DF_retro["Genres"].str.contains(t_genres[-1])) &
+                                    (DF_retro["Genres"].str.contains(t_genres[-2]))].reset_index(drop=True)
+                DF_retro = self.quatre_tests(DF_retro)
+            # sinon il n'y a qu'un genre, et on scrute les films proches qui ne partagent QUE ce genre
+            else:
+                DF_retro = DF_retro[DF_retro["Genres"] == t_genres[0]].reset_index()
+                DF_retro = self.quatre_tests(DF_retro)
+        return DF_retro
+
+    def quatre_tests(self, DF):
+        """
+            Cette fonction sert à résumer les tests rébartatifs que l'on fait avant de lâcher une rétro
+        """
+        index_ref = int(DF[DF["Titre"] == self.film].index[0])
+        # d'abord, si la DF filtrée a au maximum cinq films, on la retourne sans le film considéré
+        if len(DF) <= 5:
+            DF.drop(labels=index_ref, inplace=True)
+        # sinon, si le film cherché a un index trop proche du début de DF, on affiche
+        # les quatre films suivants
+        elif index_ref < 2:
+            DF = DF.iloc[index_ref:index_ref + 4]
+            DF.drop(labels=index_ref, axis=0, inplace=True)
+        # même chose en symétrique si le film est cette fois trop proche de la fin de DF
+        elif index_ref > (len(DF) - 2):
+            DF = DF.iloc[index_ref - 4:index_ref]
+            DF.drop(labels=index_ref, axis=0, inplace=True)
+        # sinon, on prend deux films avant et deux films après
+        else:
+            DF = DF.iloc[index_ref - 2:index_ref + 3]
+            DF.drop(labels=index_ref, axis=0, inplace=True)
+        DF = DF.copy().reset_index()
+        DF.drop(["index"], axis=1, inplace=True)
+        return DF
+
+    def filtre_retro(self):
+        """
+            Cette fonction applique un filtre simple (décennie ou réalisateur).
+        """
+        DF_retro = mov_RL.copy()
+        if self.tr == "décennie":
+            DF_retro = DF_retro[DF_retro["Année"].astype(str).str[2] == str(self.annee)[2]].reset_index(drop=True)
+        elif self.tr == "réalisateur":
+            DF_retro = DF_retro[DF_retro["director"] == self.real].reset_index(drop=True)
+        return DF_retro
+
+
+# Option
 st.set_page_config(page_title="Projet MORE",
                    page_icon="🧊",
                    layout="wide",
                    initial_sidebar_state="expanded",
                    )
+
 
 # style
 st.markdown("""
@@ -53,6 +175,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+
 #############
 ## sidebar ##
 #############
@@ -60,7 +183,7 @@ st.markdown("""
 st.sidebar.title('Projet MORE')
 st.sidebar.subheader('Navigation')
 
-categorie = st.sidebar.radio("Categorie", ('Introduction', 'Analyse Comparative', 'Femme et Cinéma',
+categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Analyse Comparative', 'Femme et Cinéma',
                                            'Les TOP par décennies', 'Quoi voir ?'))
 if categorie == 'Quoi voir ?':
     sub_categorie = st.sidebar.radio("Machine Learning", ('Recommandation de films',
@@ -68,6 +191,9 @@ if categorie == 'Quoi voir ?':
                                                           'Probabilité que vous aimiez ce film'))
 
 st.sidebar.title(' ')
+option = st.sidebar.beta_expander("Options")
+show = option.checkbox('Montre moi la data')
+
 expander = st.sidebar.beta_expander("Sources")
 expander.markdown(
     """
@@ -80,25 +206,28 @@ expander.markdown(
 expander.info('Résiliation de la **Team MORE** : '
               '_Alhem, Fanyme, Michael, Raphael, Soufiane_')
 
+
 ##########
 ## DATA ##
 ##########
 
 # modifier selon la localisation de la BD
 REPRO_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/5229e2c46ed10881eb3b9e372cd4c0198c4b15d5/repro.zip'
-FR_MOV_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/fr_mov.csv'
+FR_ml_db = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/fr_mov.csv'
 ML_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/mldb.csv'
 
-data = load_data(FR_MOV_DB)
+data = load_data(FR_ml_db)
 data_crew = load_data(REPRO_DB)
+ml_db = load_data(ML_DB).sort_values('indice MORE', ascending=False).reset_index(drop=True)
 tick_max = data['Votes'].max().item()
 tick_min = data['Votes'].min().item()
+
 
 ###############
 ## MAIN PAGE ##
 ###############
 
-if categorie == 'Introduction':
+if categorie == "Qu'est-ce que le projet MORE ?":
 
     st.title('Projet MORE ')
     st.subheader('Movie Recommandation programme')
@@ -149,7 +278,7 @@ elif categorie == 'Analyse Comparative':
             """
         La *courbe orange* montre les mêmes indices selon le filtre selectionné.
         Il suffit de modifier les curseurs pour modifier la plage de notes et de votes appliquée.
-        Par défaut, on retient les films ayant une **note supérieure à 7 pour plus de 1500 votes**.
+        Par défaut, on retient les films ayant une **note supérieure à 7 pour plus de 3000 votes**.
         """)
 
     # filters
@@ -160,7 +289,7 @@ elif categorie == 'Analyse Comparative':
                                     {"name": "Par défaut",
                                      "min_rate": 7,
                                      "max_rate": 10,
-                                     "min_vote": 1500,
+                                     "min_vote": 3000,
                                      "max_vote": 150000
                                      },
                                     {"name": "Les 1000 meilleurs films",
@@ -196,7 +325,6 @@ elif categorie == 'Analyse Comparative':
         vote_filter = st.slider('Selectionnez le nombre de votes '
                                 '(150.000 renvoie au maximum des votes)', tick_min, 150000, (defaults['min_vote'],
                                                                                              defaults['max_vote']))
-        show = st.checkbox('Montre moi la data')
 
     min_rate, max_rate = zip(rating_filter)
     min_pop = int(vote_filter[0])
@@ -324,7 +452,7 @@ elif categorie == 'Femme et Cinéma':
         même si on note une légère tendence vers l'équilibre à partir des années 90.
     """)
 
-    # proportion d'actrices dans
+    # proportion d'actrices
     actor = actors[actors['category'].isin(['actor'])]
     nb_act = actor.groupby('Titre').count()['Nom']
 
@@ -462,7 +590,6 @@ elif categorie == 'Femme et Cinéma':
         min_rate = st.slider('Selectionnez une notes minimale', 0, 10, defaults['min_rate'])
         min_pop = st.slider('Selectionnez un nombre de votes minimal ', tick_min, tick_max, defaults['min_vote'])
         max_rate, max_pop = 10, tick_max
-        show = st.checkbox('Montre moi la data')
 
     try:
         # proportion per movies
@@ -516,22 +643,22 @@ elif categorie == 'Femme et Cinéma':
             st.title(" ")
             st.markdown(
                 f"""
-            Si peu de films n'ont aucune femme dans leur casting, 
-            on peut constater que les actrices sont généralement placées en retrait
-            et interviennent surtout pour des seconds rôles.
-    
-            Un **filtre**, ci dessus, permet de changer la popularité des films étudiés,
-            et de mettre en avant l’aggravation des inégalités 
-            dès lors qu’on se rapproche des films les plus populaires.
-    
-            La popularité se ressent aussi au niveau du nombre de votes 
-            qui est inférieur dès lors que l'actrice tient le role principal.
-    
-            Pour un premier role, on constate en moyenne **{round(nb_vote_W) if nb_vote_W > 0 else 0 } votes 
-            pour une actrice**, contre **{round(nb_votes_M)} votes pour un acteur**, 
-            soit un **nombre de votre inférieur de 
-            {round(100 - ((nb_vote_W * 100) / nb_votes_M)) if nb_vote_W > 0 else 100 } %**.
-            """)
+                Si peu de films n'ont aucune femme dans leur casting, 
+                on peut constater que les actrices sont généralement placées en retrait
+                et interviennent surtout pour des seconds rôles.
+        
+                Un **filtre**, ci dessus, permet de changer la popularité des films étudiés,
+                et de mettre en avant l’aggravation des inégalités 
+                dès lors qu’on se rapproche des films les plus populaires.
+        
+                La popularité se ressent aussi au niveau du nombre de votes 
+                qui est inférieur dès lors que l'actrice tient le role principal.
+        
+                Pour un premier role, on constate en moyenne **{round(nb_vote_W) if nb_vote_W > 0 else 0 } votes 
+                pour une actrice**, contre **{round(nb_votes_M)} votes pour un acteur**, 
+                soit un **nombre de votre inférieur de 
+                {round(100 - ((nb_vote_W * 100) / nb_votes_M)) if nb_vote_W > 0 else 100 } %**.
+                """)
 
         col1, col2 = st.beta_columns(2)
         with col1:
@@ -677,7 +804,7 @@ elif categorie == 'Quoi voir ?':
         st.subheader('Laissez vous seduire par la magie du Machine Learning')
 
         # data
-        mov_db = load_data(ML_DB)
+        ml_db = load_data(ML_DB).sort_values('indice MORE', ascending=False).reset_index(drop=True)
 
         st.markdown(
             f"""
@@ -686,12 +813,12 @@ elif categorie == 'Quoi voir ?':
     
             Afin de de vous faire une proposition, nous vous invitons à selectionner un de vos films favoris pour que 
             l'outil MORE puisse l'analyser et vous proposer des films proches
-            parmis **une selection de {mov_db.index[-1]} films**.
+            parmis **une selection de {ml_db.index[-1]} films**.
             """
         )
 
         with st.form(key='my_form'):
-            movie_selected = st.selectbox('Choisissez votre film :', mov_db['Titre'])
+            movie_selected = st.selectbox('Choisissez votre film :', ml_db['Titre'])
             speed = st.checkbox('Activer le FastML')
             st.markdown('Le mode _Fast Machine Learning_ permet de réduire fortement le temps de calcul, '
                         'mais impacte la précision des recommandations.')
@@ -700,22 +827,8 @@ elif categorie == 'Quoi voir ?':
         if submit:
 
             # recommandation genre
-            temp_db = mov_db.copy().sort_values('indice MORE')
-            temp_db['director'] = temp_db['director'].factorize()[0]
-            temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-            temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-            temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-            temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-            temp_db = temp_db[['Année', 'indice MORE', 'Votes',
-                               'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-            temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-            mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
-
-            mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-            mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
-
-            X = mldb
-            y = mov_db['Note'].round(0)
+            X = ml_data(ml_db)
+            y = ml_db['Note'].round(0)
 
             if speed:
                 pca = PCA(n_components=0.60).fit(X)
@@ -723,50 +836,28 @@ elif categorie == 'Quoi voir ?':
 
             modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
             reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False))
-            reco = reco.loc[mov_db[mov_db['Titre'] == movie_selected].index]
+            reco = reco.loc[ml_db[ml_db['Titre'] == movie_selected].index]
 
             st.subheader(f'_Parce que vous appreciez **{movie_selected}**_')
             cols = st.beta_columns(4)
             for i, col in enumerate(cols):
-                reco_two = mov_db[mov_db.index == reco.iloc[0, i+1]][['tconst', 'Titre']]
-                col.write(reco_two.iloc[0, 1])
-
-                page = urllib.request.urlopen('https://www.imdb.com/title/' +
-                                              reco_two.iloc[0, 0] +
-                                              '/?ref_=adv_li_i%27')
-                htmlCode = page.read().decode('UTF-8')
-                soup = Soup(htmlCode)
-                tds = soup.find("div", {"class": "poster"})
-                img = tds[0].find("img")
-                col.image(img.attrs['src'])
+                index_mov = ml_db[ml_db.index == reco.iloc[0, i+1]][['tconst', 'Titre']]
+                col.subheader(index_mov.iloc[0, 1])
+                col.image(picture(index_mov))
 
             st.markdown('---')
 
             # recommendation cast
             for cast_rang in range(8, 11):
-                search = mov_db[mov_db['Titre'] == movie_selected]
-                fil_data = mov_db[(mov_db['main_role'] == search.iloc[0, cast_rang]) |
-                                  (mov_db['second_role'] == search.iloc[0, cast_rang]) |
-                                  (mov_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
+                search = ml_db[ml_db['Titre'] == movie_selected]
+                fil_data = ml_db[(ml_db['main_role'] == search.iloc[0, cast_rang]) |
+                                  (ml_db['second_role'] == search.iloc[0, cast_rang]) |
+                                  (ml_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
 
                 if fil_data.shape[0] > 2:
-                    temp_db = fil_data.copy()
-                    temp_db['director'] = temp_db['director'].factorize()[0]
-                    temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-                    temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-                    temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-                    temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-                    temp_db = temp_db[['Année', 'indice MORE', 'Note', 'Votes',
-                                       'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-                    temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-                    mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1)
-                    mldb.drop(columns=['Genres'], inplace=True)
+                    X = ml_data(fil_data)
+                    y = fil_data['Note'].round(0)
 
-                    mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-                    mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
-
-                    X = mldb
-                    y = mldb['Note'].round(0)
                     modelMORE = KNeighborsClassifier(weights='distance',
                                                      n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5else 5).fit(X, y)
 
@@ -779,67 +870,146 @@ elif categorie == 'Quoi voir ?':
                     for i, col in enumerate(cols):
                         index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
                         col.subheader(index_mov.iloc[0, 1])
-
-                        page = urllib.request.urlopen('https://www.imdb.com/title/' +
-                                                      index_mov.iloc[0, 0] +
-                                                      '/?ref_=adv_li_i%27')
-                        htmlCode = page.read().decode('UTF-8')
-                        soup = Soup(htmlCode)
-                        tds = soup.find("div", {"class": "poster"})
-                        img = tds[0].find("img")
-                        col.image(img.attrs['src'])
+                        col.image(picture(index_mov))
 
                     st.markdown('---')
 
             # recommendation director
-            search = mov_db[mov_db['Titre'] == movie_selected]
-            fil_data = mov_db[mov_db['director'] == search.iloc[0, 7]].sort_values('indice MORE').reset_index()
+            search = ml_db[ml_db['Titre'] == movie_selected]
+            fil_data = ml_db[ml_db['director'] == search.iloc[0, 7]]
 
             if fil_data.shape[0] > 2:
-                temp_db = fil_data.copy()
-                temp_db['director'] = temp_db['director'].factorize()[0]
-                temp_db['main_role'] = temp_db['main_role'].factorize()[0]
-                temp_db['second_role'] = temp_db['second_role'].factorize()[0]
-                temp_db['third_role'] = temp_db['third_role'].factorize()[0]
-                temp_db['Genres'] = temp_db['Genres'].apply(lambda x: x.split(','))
-                temp_db = temp_db[['Année', 'indice MORE', 'Note', 'Votes',
-                                   'director', 'main_role', 'second_role', 'third_role', 'Genres']]
-                temp_tab = temp_db.explode('Genres')['Genres'].str.get_dummies()
-                mldb = pd.concat([temp_db, temp_tab.groupby(temp_tab.index).agg('sum')], axis=1).drop(columns=['Genres'])
-
-                mldb.iloc[:, :7] = preprocessing.normalize(mldb.iloc[:, :7])
-                mldb.iloc[:, 7:] = preprocessing.normalize(mldb.iloc[:, 7:])
-
-                X = mldb
-                y = mldb['Note'].round(0)
+                X = ml_data(fil_data)
+                y = fil_data['Note'].round(0)
                 modelMORE = KNeighborsClassifier(weights='distance',
                                                  n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5 else 5).fit(X, y)
 
                 new_row = fil_data[fil_data['Titre'] == movie_selected]
-
-                reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
+                reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[fil_data.index[0]]
 
                 st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 7]}** à la réalisation_')
                 cols = st.beta_columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
                 for i, col in enumerate(cols):
-                    index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
+                    index_mov = fil_data[fil_data.reset_index().index == reco.iloc[i+1]][['tconst', 'Titre']]
                     col.subheader(index_mov.iloc[0, 1])
-
-                    page = urllib.request.urlopen('https://www.imdb.com/title/' +
-                                                  index_mov.iloc[0, 0] +
-                                                  '/?ref_=adv_li_i%27')
-                    htmlCode = page.read().decode('UTF-8')
-                    soup = Soup(htmlCode)
-                    tds = soup.find("div", {"class": "poster"})
-                    img = tds[0].find("img")
-                    col.image(img.attrs['src'])
+                    col.image(picture(index_mov))
 
 
-# lien tuto streamlit
-# https://docs.streamlit.io/en/stable/getting_started.html
+    if sub_categorie == 'Restrospectives':
+        st.title('Restrospectives')
+        st.subheader("Organisez des rétrospectives à l'aide de l'**Intelligence Artificielle**.")
+        st.markdown(
+            f"""
+            Idée de rétro ? 
+            
+            Au boulot !
+            """
+        )
 
-# Galerie 
-# https://streamlit.io/gallery?type=apps&category=data-visualization
+        with st.form(key='retro'):
+            movie = st.selectbox('Choisissez votre film :', ml_db['Titre'])
+            retro = st.selectbox('Choisissez le type de rétrospective :', ['réalisateur', 'décennie'])
+            submit = st.form_submit_button(label='Rechercher')
 
-# Doc
-# https://awesome-streamlit.org
+        if submit:
+            min_pop, max_pop = (3000, tick_max)
+            min_rate, max_rate = (7, 10)
+
+            retro_db = ml_db.copy()
+            best_mov = fav_filter(ml_db)
+            best_mov['bm'] = 1
+            total_mov = pd.merge(retro_db, best_mov[['tconst', 'bm']], how="left", on=["tconst"]).fillna(0)
+
+            X = ml_rating(total_mov)
+            y = total_mov["bm"]
+            modeleLR = LogisticRegression(class_weight="balanced").fit(X, y)
+
+            Xpred = modeleLR.predict_proba(X)
+            retro_db["probm"] = Xpred[:, 1]
+            mov_RL = retro_db.sort_values("probm", ascending=False).reset_index(drop=True)
+
+            # class retrospective
+            movies_selection = Retrospective(film=movie, type_retro=retro).propo_retro()
+            st.subheader('Pour votre rétospective, nous vous proposons les films suivants : ')
+            cols = st.beta_columns(len(movies_selection))
+            for i, col in enumerate(cols):
+                index_mov = ml_db[ml_db['tconst'] == movies_selection.iloc[i, 0]][['tconst', 'Titre']]
+                col.subheader(index_mov.iloc[0, 1])
+                col.image(picture(index_mov))
+
+            if show:
+                st.title(' ')
+                st.dataframe(movies_selection)
+
+
+
+
+
+
+
+
+    if sub_categorie == 'Probabilité que vous aimiez ce film':
+        st.title('Est-ce que ce film va me plaire ?')
+        st.subheader('Ne perdez plus votre temps avec des films qui ne vous correspondent pas')
+        st.markdown(
+            f"""
+            Vous hésitez entre deux films ? Ne laissez plus rien au hasard et laissez-vous conseiller par 
+            l'_Intelligence Artificielle_ et vous n’aurez plus qu’à chercher le popcorn. 
+
+            Afin d’initialiser l’outil, nous vous invitons à créer votre profil en **indiquant les films 
+            que vous avez appréciez**. Il est conseillé d’indiquer 3 films minimum. 
+
+            Il vous suffit ensuite d’**indiquer le film que vous souhaitez voir** et l’algorithme vous indiquera alors 
+            quel est votre **degré de comptabilité**.
+            """
+        )
+
+        with st.form(key='proba'):
+            user_profil = st.multiselect('Constituer votre profil : Quels sont les films que vous aimez ?',
+                                         ml_db['Titre'],
+                                         help='Il est conseillé de selectionner au moins 3 films. '
+                                              'Plus vous selectionnez de films plus la recommandation sera pertinante')
+            movie_selected = st.selectbox('Choisissez le film que vous souhaitez voir :', ml_db['Titre'])
+            submit = st.form_submit_button(label='Rechercher')
+
+        if submit:
+            predict_data = ml_db.copy()
+            predict_data['user_choice'] = 0
+            for movie in user_profil:
+                id_mov = predict_data[predict_data['Titre'] == movie].index
+                predict_data.iloc[id_mov, 12] = 1
+
+            # data
+            temp = predict_data.copy()
+            temp['director'] = temp['director'].factorize()[0]
+            temp['main_role'] = temp['main_role'].factorize()[0]
+            temp['second_role'] = temp['second_role'].factorize()[0]
+            temp['third_role'] = temp['third_role'].factorize()[0]
+            temp['Genres'] = temp['Genres'].apply(lambda x: x.split(','))
+            temp['indice_MORE'] = ((temp['Note'] * temp['Votes']) / (temp['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(math.sqrt).apply(lambda x: round(x, 2))
+            temp = temp[['user_choice', 'director', 'main_role', 'second_role', 'third_role',
+                         'Note', 'Votes', 'Année', 'Genres']]
+            genres = temp.explode('Genres')['Genres'].str.get_dummies()
+            db = pd.concat([temp, genres.groupby(genres.index).agg('sum')], axis=1).drop(columns=['Genres'])
+            power = PowerTransformer().fit(db.drop(columns='user_choice'))
+
+            #model
+            X = power.transform(db.drop(columns='user_choice'))
+            y = db['user_choice']
+            model = LogisticRegression(max_iter=1000, class_weight={1: 10 ** 17, 0: 1}).fit(X, y)
+
+            prediction = model.predict_proba(X)
+            predict_data["proba"] = (prediction[:, 1] * 100).round(2)
+
+            st.title(' ')
+            col1, col2 = st.beta_columns([2, 1])
+            with col1:
+                col1.title(' ')
+                col1.subheader(f"Vous avez **{predict_data[predict_data['Titre'] == movie_selected].iloc[0,13]} %** "
+                               f"de chances d'apprecier le film **{movie_selected}**")
+            with col2:
+                col2.image(picture(predict_data[predict_data['Titre'] == movie_selected]))
+
+            if show :
+                st.title(' ')
+                st.dataframe(predict_data.sort_values('proba', ascending=False).reset_index())
