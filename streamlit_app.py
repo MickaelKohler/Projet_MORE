@@ -107,7 +107,7 @@ class Retrospective:
                 DF_retro = self.quatre_tests(DF_retro)
             # sinon il n'y a qu'un genre, et on scrute les films proches qui ne partagent QUE ce genre
             else:
-                DF_retro = DF_retro[DF_retro["Genres"] == t_genres[0]].reset_index()
+                DF_retro = DF_retro[DF_retro["Genres"] == t_genres[0]].reset_index(drop=True)
                 DF_retro = self.quatre_tests(DF_retro)
         return DF_retro
 
