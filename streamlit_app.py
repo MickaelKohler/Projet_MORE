@@ -23,8 +23,12 @@ def load_data(url):
                        'deathYear': 'Décès'}, inplace=True)
     db['indice MORE'] = ((db['Note'] * db['Votes']) / (db['Votes'].sum()) * 1000000000).apply(math.sqrt).apply(
         math.sqrt).apply(lambda x: round(x, 2))
-
     return db
+
+
+@st.cache
+def load_df(url):
+    return pd.read_csv(url)
 
 
 def fav_filter(dataframe):
@@ -183,8 +187,8 @@ st.markdown("""
 st.sidebar.title('Projet MORE')
 st.sidebar.subheader('Navigation')
 
-categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Analyse Comparative', 'Femme et Cinéma',
-                                           'Les TOP par décennies', 'Quoi voir ?'))
+categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Presentation de la Base de données',
+                                           'Femme et Cinéma', 'Les TOP par décennies', 'Quoi voir ?'))
 if categorie == 'Quoi voir ?':
     sub_categorie = st.sidebar.radio("Machine Learning", ('Recommandation de films',
                                                           'Restrospectives',
@@ -215,6 +219,8 @@ expander.info('Résiliation de la **Team MORE** : '
 REPRO_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/5229e2c46ed10881eb3b9e372cd4c0198c4b15d5/repro.zip'
 FR_ml_db = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/fr_mov.csv'
 ML_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/mldb.csv'
+country = 'https://raw.githubusercontent.com/MickaelKohler/Projet_MORE/main/country.csv'
+prod = 'https://raw.githubusercontent.com/MickaelKohler/Projet_MORE/main/cum_prod.csv'
 
 data = load_data(FR_ml_db)
 data_crew = load_data(REPRO_DB)
@@ -262,14 +268,82 @@ if categorie == "Qu'est-ce que le projet MORE ?":
         st.image('https://github.com/MickaelKohler/Projet_MORE/raw/main/Ressources/sub.png')
 
 
-elif categorie == 'Analyse Comparative':
+elif categorie == 'Presentation de la Base de données':
+    st.title('Presentation de la Base de données')
+    st.subheader("La face cachée des chiffres")
 
-    st.title('Analyse comparative')
+    prod = load_df(prod)
+    fig = go.Figure()
+    for i in range(9):
+        fig.add_trace(go.Scatter(
+            x=prod.index,
+            y=prod.iloc[:, i],
+            hoverinfo='name+y',
+            mode='lines',
+            stackgroup='one'
+        ))
+    fig.update_layout(
+        hovermode="closest",
+        hoverdistance=100,
+        spikedistance=1000,
+        xaxis=dict(
+            nticks=20,
+            linecolor="#BCCCDC",
+            showspikes=True,
+            spikethickness=1,
+            spikedash="dot",
+            spikecolor="#999999",
+            spikemode="across",
+        ),
+        yaxis=dict(
+            title="Production (en millions d'unités)"),
+        legend=dict(
+            x=0,
+            y=1,
+            traceorder="normal",
+            bgcolor='rgba(0,0,0,0)',
+            font=dict(size=12)),
+        font=dict(family="IBM Plex Sans"),
+        title="<b>Proportion des types de productions au fil du temps</b>")
+    st.plotly_chart(fig, use_container_width=True)
+    if show:
+        st.dataframe(prod)
 
+
+
+    country = load_df(country)
+    df = px.data.gapminder().query("year==2007")
+    fig = go.Figure(data=go.Choropleth(
+        locations=country.index,
+        z=country['nb_mov'],
+        text=country['country'],
+        colorscale=px.colors.sequential.Magma,
+        autocolorscale=False,
+        reversescale=True,
+        marker_line_color='darkgray',
+        marker_line_width=0.5,
+        colorbar_title='Nombre de films',
+    ))
+    fig.update_layout(
+        title_text='2014 Global GDP',
+        geo=dict(
+            showframe=False,
+            showcoastlines=False,
+            projection_type='natural earth'
+        )
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    if show:
+        st.dataframe(country)
+
+
+
+
+    st.subheader("Qu'est ce qui caractérise un bon film ?")
     col1, col2 = st.beta_columns(2)
     with col1:
         st.markdown(
-            """
+        """
         La *courbe bleue* montre différentes caractéristiques des films selon les décénnies.
         Elles sont extraites de la base de données du site **imbd**.
         """)
