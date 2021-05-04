@@ -942,12 +942,6 @@ elif categorie == 'Quoi voir ?':
                 st.dataframe(movies_selection)
 
 
-
-
-
-
-
-
     if sub_categorie == 'Probabilité que vous aimiez ce film':
         st.title('Est-ce que ce film va me plaire ?')
         st.subheader('Ne perdez plus votre temps avec des films qui ne vous correspondent pas')
