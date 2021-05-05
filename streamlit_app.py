@@ -1046,6 +1046,7 @@ elif categorie == 'Les TOP par décennies':
     with col2:
         TOP_choice = st.radio("Type de TOP",
                                      ('Par décennies', 'Par Année', 'Toutes années confondues'))
+        select_genres = st.checkbox('Selectionner un genre de film')
         expander = st.beta_expander("indice MORE ?")
         expander.markdown("**L'indice MORE** permet de lier le nombre de votes et la note d'un film "
                           "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 40) "
@@ -1064,60 +1065,77 @@ elif categorie == 'Les TOP par décennies':
         if TOP_choice == 'Toutes années confondues':
             start_year = 1920
             stop_year = 2020
+        if select_genres:
+            list_selected = st.multiselect('Quel genre de films souhaitez-vous selectionner ?',
+                                           ['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
+                                            'Documentary', 'Drama', 'Family', 'Fantasy', 'Film-Noir', 'History',
+                                            'Horror', 'Music', 'Musical', 'Mystery', 'News', 'Romance', 'Sci-Fi',
+                                            'Sport', 'Thriller', 'War', 'Western'],
+                                           help='Il faut selectionner 1 à 3 genres différents maximum')
+            list_selected.sort()
+            genre_selected = ','.join(list_selected)
+        else:
+            st.title(' ')
         filtre = st.selectbox(
             'Vous souhaitez filtrer par :',
             ['indice MORE', 'Votes', 'Total', 'Note'])
 
     filtered_data = data[(data['Année'] >= start_year) & (data['Année'] < stop_year)]
+    if select_genres:
+        filtered_data = filtered_data[filtered_data['Genres'] == genre_selected]
 
-    # diplay the data
-    st.subheader('Top 10 des films')
-    temp_tab = filtered_data[['Titre', 'Année', 'Genres', 'Note', 'Votes', 'indice MORE']]
-    top_film = temp_tab.groupby(['Titre', 'Année']).max().sort_values(
-        'indice MORE' if filtre == 'Total' else filtre, ascending=False)
-    top_film.reset_index(inplace=True)
-    top_film.index = top_film.index + 1
-    st.table(top_film.iloc[0:10])
+    if not select_genres or 0 < len(list_selected) < 4:
+        # diplay the data
+        st.subheader('Top 10 des films')
+        temp_tab = filtered_data[['Titre', 'Année', 'Genres', 'Note', 'Votes', 'indice MORE']]
+        top_film = temp_tab.groupby(['Titre', 'Année']).max().sort_values(
+            'indice MORE' if filtre == 'Total' else filtre, ascending=False)
+        top_film.reset_index(inplace=True)
+        top_film.index = top_film.index + 1
+        st.table(top_film.iloc[0:10])
 
-    st.subheader('Top 10 des réalisateurs')
-    temp_tab = filtered_data[filtered_data['category'] == 'director'][['Nom', 'Naissance', 'Décès',
-                                                                       'Total', 'Note', 'Votes', 'indice MORE']]
-    top_real = temp_tab.groupby(['Nom', 'Naissance']) \
-        .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
-        .sort_values(filtre, ascending=False)
-    top_real.reset_index(inplace=True)
-    top_real.index = top_real.index + 1
-    st.table(top_real.iloc[0:10])
-
-    st.subheader('Top 10 des acteurs')
-    temp_tab = filtered_data[filtered_data['category'].isin(['actor'])][['Nom', 'Naissance', 'Décès',
-                                                                         'Total', 'Note', 'Votes', 'indice MORE']]
-    top_act = temp_tab.groupby(['Nom', 'Naissance']) \
-        .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
-        .sort_values(filtre, ascending=False)
-    top_act.reset_index(inplace=True)
-    top_act.index = top_act.index + 1
-    st.table(top_act.iloc[0:10])
-
-    st.subheader('Top 10 des actrices')
-    temp_tab = filtered_data[filtered_data['category'].isin(['actress'])][['Nom', 'Naissance', 'Décès',
+        st.subheader('Top 10 des réalisateurs')
+        temp_tab = filtered_data[filtered_data['category'] == 'director'][['Nom', 'Naissance', 'Décès',
                                                                            'Total', 'Note', 'Votes', 'indice MORE']]
-    top_act = temp_tab.groupby(['Nom', 'Naissance']) \
-        .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
-        .sort_values(filtre, ascending=False)
-    top_act.reset_index(inplace=True)
-    top_act.index = top_act.index + 1
-    st.table(top_act.iloc[0:10])
+        top_real = temp_tab.groupby(['Nom', 'Naissance']) \
+            .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
+            .sort_values(filtre, ascending=False)
+        top_real.reset_index(inplace=True)
+        top_real.index = top_real.index + 1
+        st.table(top_real.iloc[0:10])
 
-    st.subheader('Top 10 des compositeurs')
-    temp_tab = filtered_data[filtered_data['category'].isin(['composer'])][['Nom', 'Naissance', 'Décès',
-                                                                            'Total', 'Note', 'Votes', 'indice MORE']]
-    top_act = temp_tab.groupby(['Nom', 'Naissance']) \
-        .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
-        .sort_values(filtre, ascending=False)
-    top_act.reset_index(inplace=True)
-    top_act.index = top_act.index + 1
-    st.table(top_act.iloc[0:10])
+        st.subheader('Top 10 des acteurs')
+        temp_tab = filtered_data[filtered_data['category'].isin(['actor'])][['Nom', 'Naissance', 'Décès',
+                                                                             'Total', 'Note', 'Votes', 'indice MORE']]
+        top_act = temp_tab.groupby(['Nom', 'Naissance']) \
+            .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
+            .sort_values(filtre, ascending=False)
+        top_act.reset_index(inplace=True)
+        top_act.index = top_act.index + 1
+        st.table(top_act.iloc[0:10])
+
+        st.subheader('Top 10 des actrices')
+        temp_tab = filtered_data[filtered_data['category'].isin(['actress'])][['Nom', 'Naissance', 'Décès',
+                                                                               'Total', 'Note', 'Votes', 'indice MORE']]
+        top_act = temp_tab.groupby(['Nom', 'Naissance']) \
+            .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
+            .sort_values(filtre, ascending=False)
+        top_act.reset_index(inplace=True)
+        top_act.index = top_act.index + 1
+        st.table(top_act.iloc[0:10])
+
+        st.subheader('Top 10 des compositeurs')
+        temp_tab = filtered_data[filtered_data['category'].isin(['composer'])][['Nom', 'Naissance', 'Décès',
+                                                                                'Total', 'Note', 'Votes', 'indice MORE']]
+        top_act = temp_tab.groupby(['Nom', 'Naissance']) \
+            .agg({'Note': 'mean', 'Votes': 'sum', 'Total': 'count', 'indice MORE': 'mean'}) \
+            .sort_values(filtre, ascending=False)
+        top_act.reset_index(inplace=True)
+        top_act.index = top_act.index + 1
+        st.table(top_act.iloc[0:10])
+    else:
+        st.warning('Merci de selectionner le genre  de film de votre selection. '
+                   'Il faut selectionner au **minimum 1** genre et au **maximum 3**')
 
 
 elif categorie == 'Quoi voir ?':
