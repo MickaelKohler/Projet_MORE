@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.preprocessing import PowerTransformer
+from sklearn.preprocessing import PowerTransformer, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
@@ -40,7 +40,8 @@ def fav_filter(dataframe):
                      (dataframe['Note'].between(min_rate, max_rate))]
 
 
-def ml_data(data):
+def ml_data(df):
+    data = df.copy()
     data['director'] = data['director'].factorize()[0]
     data['main_role'] = data['main_role'].factorize()[0]
     data['second_role'] = data['second_role'].factorize()[0]
@@ -54,7 +55,8 @@ def ml_data(data):
     return power.transform(mldb)
 
 
-def ml_rating(data):
+def ml_rating(df):
+    data = df.copy()
     data['director'] = data['director'].factorize()[0]
     data['main_role'] = data['main_role'].factorize()[0]
     data['second_role'] = data['second_role'].factorize()[0]
@@ -106,7 +108,7 @@ class Retrospective:
         if self.tr == "réalisateur":
             DF_retro = self.quatre_tests(DF_retro)
         elif self.tr == "décennie":
-            t_genres = self.genres
+            t_genres = self.genres.split(',')
             if len(t_genres) > 1:
                 # s'il y a plus d'un genre, on filtre les films qui partagent les deux derniers genres
                 DF_retro = DF_retro[(DF_retro["Genres"].str.contains(t_genres[-1])) &
@@ -114,6 +116,7 @@ class Retrospective:
                 DF_retro = self.quatre_tests(DF_retro)
             # sinon il n'y a qu'un genre, et on scrute les films proches qui ne partagent QUE ce genre
             else:
+                print('test2')
                 DF_retro = DF_retro[DF_retro["Genres"] == t_genres[0]].reset_index(drop=True)
                 DF_retro = self.quatre_tests(DF_retro)
         return DF_retro
@@ -570,7 +573,7 @@ elif categorie == 'Presentation de la Base de données':
         **les films ont gagné environ une demi-heure**. Cette tendance semble assez stable 
         depuis le milieu le début des années 60.
 
-        Les bons films sont quant à eux plus long de vingt minutes supplémentaires en moyenne. 
+        Les bons films sont quant à eux plus longs de vingt minutes supplémentaires en moyenne. 
         Un bon film serait, en moyenne, plutot un film long. 
         """
     )
@@ -612,6 +615,112 @@ elif categorie == 'Presentation de la Base de données':
         qui **passe de 37 ans à 44 ans, soit 7 ans en plus**. 
         """
     )
+
+    st.markdown('---')
+
+    st.subheader('Une étude des genres : un _Drama_ en 2 actes.')
+    st.markdown(
+        """
+        En conclusion, on va faire un focus sur les genres des films tels qu’ils sont défini par IMDb. 
+        Le site a donné un descriptif de chaque genre sur [ce lien]
+        (https://help.imdb.com/article/contribution/titles/genres/GZDRMS6R742JRGAG#).
+
+        IMDb se limite à **attribuer de 0 à 3 genres par films** 
+        pour les définir sur un **total de 27 genres différents**.
+        """
+    )
+
+    temp_tab = data.copy()
+    temp_tab['Genres'] = temp_tab['Genres'].apply(lambda x: x.split(','))
+    temp_tab = temp_tab.explode('Genres')
+    Best_genres = temp_tab.pivot_table(values='Votes', index=['Genres'], aggfunc='count')
+    Best_genres = Best_genres.sort_values('Votes', ascending=False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
+
+    fig = go.Figure(data=[go.Scatter(
+        x=list(Best_genres.index), y=[1] * 27,
+        text=Best_genres['Votes'],
+        mode='markers',
+        marker=dict(
+            size=Best_genres['Votes'],
+            color=Best_genres['Votes'],
+            sizemode='area',
+            sizeref=2,
+            showscale=True,
+            colorscale='Peach'
+        )
+    )])
+    fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
+                      title='<b>Quels sont les genres dominants ?</b> Entre rire et pleurer, ils ont choisi.',
+                      uniformtext_minsize=14, uniformtext_mode='hide',
+                      margin=dict(l=10, r=10, b=10),
+                      plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_yaxes(title=None, showticklabels=False)
+
+    if show:
+        col1, col2 = st.beta_columns([3, 1])
+        with col1:
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.title(' ')
+            st.dataframe(Best_genres)
+    else:
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown(
+        """
+        On note tout de suite que le genre le plus présent dans la base de données est **_Drama_, 
+        qui ressort dans un peu moins de 30% des films**, suivi de _Comédie_.
+
+        Il est toutefois victime de son succès, puisque selon que l’on cherche par vote moyen ou par nombre 
+        de votre, le genre _Drama_ tombe largement das le classement.
+        
+        A ce jeu-là, le genre _Sci_Fi_ devient le grand vainqueur de la popularité alors que les genres 
+        qui se collent à la réalité (_Documentaires_ et _Biographies_) reçoivent  la meilleure moyenne. 
+        """
+    )
+
+    rate_genres = temp_tab.pivot_table(values='Note', index=['Genres'], aggfunc='mean')
+    rate_genres = rate_genres.sort_values('Note', ascending = False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
+
+    pop_genres = temp_tab.pivot_table(values='Votes', index=['Genres'], aggfunc='mean')
+    pop_genres = pop_genres.sort_values('Votes',ascending=False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
+
+    color_rate = ['deepskyblue']*15
+    color_rate[9] = 'coral'
+    color_pop = ['deepskyblue']*15
+    color_pop[13] = 'coral'
+    fig_rate = go.Figure(go.Bar(
+        x=rate_genres['Note'][:15],
+        y=rate_genres.index[:15],
+        orientation='h',
+        marker_color=color_rate,
+        text=rate_genres['Note'][:15].round(2),
+        textposition='auto'))
+    fig_rate.update_layout(margin=dict(l=30, r=10, b=30, t=30))
+    fig_rate.update_yaxes(autorange="reversed", side='left')
+    fig_rate.update_xaxes(title='Note moyenne par catégorie de films')
+
+    fig_pop = go.Figure(go.Bar(
+        x=pop_genres['Votes'][:15],
+        y=pop_genres.index[:15],
+        orientation='h',
+        marker_color=color_pop,
+        text=pop_genres['Votes'][:15].round(0),
+        textposition='auto'))
+    fig_pop.update_layout(margin=dict(l=10, r=30, b=30, t=30))
+    fig_pop.update_yaxes(autorange="reversed", side='right')
+    fig_pop.update_xaxes(autorange="reversed",
+                         title='Nombre de votes moyen par catégorie de films')
+
+    col1, col2 = st.beta_columns(2)
+    with col1:
+        st.plotly_chart(fig_rate, use_container_width=True)
+        if show:
+            st.dataframe(rate_genres)
+    with col2:
+        st.plotly_chart(fig_pop, use_container_width=True)
+        if show:
+            st.dataframe(pop_genres)
 
 elif categorie == 'Femme et Cinéma':
 
@@ -1038,13 +1147,12 @@ elif categorie == 'Quoi voir ?':
             submit = st.form_submit_button(label='Rechercher')
 
         if submit:
-
             # recommandation genre
             X = ml_data(ml_db)
             y = ml_db['Note'].round(0)
 
             if speed:
-                pca = PCA(n_components=0.65).fit(X)
+                pca = PCA(n_components=0.60).fit(X)
                 X = pca.transform(X)
 
             modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
@@ -1075,7 +1183,6 @@ elif categorie == 'Quoi voir ?':
                                                      n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5else 5).fit(X, y)
 
                     new_row = fil_data[fil_data['Titre'] == movie_selected]
-
                     reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
 
                     st.subheader(f'_Parce que vous appreciez **{search.iloc[0, cast_rang]}**_')
@@ -1089,7 +1196,7 @@ elif categorie == 'Quoi voir ?':
 
             # recommendation director
             search = ml_db[ml_db['Titre'] == movie_selected]
-            fil_data = ml_db[ml_db['director'] == search.iloc[0, 7]]
+            fil_data = ml_db[ml_db['director'] == search.iloc[0, 7]].sort_values('indice MORE').reset_index(drop=True)
 
             if fil_data.shape[0] > 2:
                 X = ml_data(fil_data)
@@ -1098,7 +1205,7 @@ elif categorie == 'Quoi voir ?':
                                                  n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5 else 5).fit(X, y)
 
                 new_row = fil_data[fil_data['Titre'] == movie_selected]
-                reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[fil_data.index[0]]
+                reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
 
                 st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 7]}** à la réalisation_')
                 cols = st.beta_columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
