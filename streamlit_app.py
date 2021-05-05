@@ -28,7 +28,10 @@ def load_data(url):
 
 @st.cache
 def load_df(url):
-    return pd.read_csv(url)
+    df = pd.read_csv(url)
+    df.set_index(df.iloc[:,0], inplace=True)
+    df = df.iloc[:, 1:]
+    return df
 
 
 def fav_filter(dataframe):
@@ -272,44 +275,95 @@ elif categorie == 'Presentation de la Base de données':
     st.title('Presentation de la Base de données')
     st.subheader("La face cachée des chiffres")
 
+    st.markdown(
+        """
+        Afin d’avoir une vision générale des productions cinématographique, nous avons utilisé la base de données 
+        mise à disposition par le **site de IMDb**, acronyme de _Internet Movie Database_.
+        
+        La base de donnée est mise à jour quotidiennement, mais pour les besoins de la présentation, 
+        **les données ont été arrêtées à début mai 2021**.  
+
+        Puisque le site est américain (propriété d’Amazon), le public est aussi à majorité anglo-saxonne, 
+        ce qui va se ressentir dans le nombre de votes des films français. 
+        Il ne faudra pas oublier cette donnée lors des différentes analyses. 
+
+        Après cette première présentation, nous pouvons commencer par quelques observations générales. 
+        """
+    )
+
     prod = load_df(prod)
-    fig = go.Figure()
-    for i in range(9):
-        fig.add_trace(go.Scatter(
-            x=prod.index,
-            y=prod.iloc[:, i],
-            hoverinfo='name+y',
-            mode='lines',
-            stackgroup='one'
-        ))
-    fig.update_layout(
-        hovermode="closest",
-        hoverdistance=100,
-        spikedistance=1000,
-        xaxis=dict(
-            nticks=20,
-            linecolor="#BCCCDC",
-            showspikes=True,
-            spikethickness=1,
-            spikedash="dot",
-            spikecolor="#999999",
-            spikemode="across",
-        ),
-        yaxis=dict(
-            title="Production (en millions d'unités)"),
-        legend=dict(
-            x=0,
-            y=1,
-            traceorder="normal",
-            bgcolor='rgba(0,0,0,0)',
-            font=dict(size=12)),
-        font=dict(family="IBM Plex Sans"),
-        title="<b>Proportion des types de productions au fil du temps</b>")
-    st.plotly_chart(fig, use_container_width=True)
+    col1, col2 = st.beta_columns([2, 1])
+    with col2:
+        st.title(' ')
+        st.markdown(
+            """
+            Un premier point intéressant à regarder est la **diversité des oeuvres répertoriées dans IMDB**. 
+            
+            Une très large majorité de contenus est étiquetée _tvEpisode_, avec près de 6 millions d'entrées, 
+            et **les films n'arrivent qu'en troisième position**, avec moins d'un million d'unités.
+            """
+        )
+        filter_type = st.multiselect(label='Selectionnez les Types ?', options=list(prod.columns),
+                                     default=['movie', 'short', 'tvEpisode'],
+                                     help='Seuls les types principaux ont été retenus',)
+    prod_fil = pd.DataFrame(index=prod.index)
+    for col in filter_type:
+        if col in prod.columns:
+            prod_fil[col] = prod[col]
+    with col1:
+        fig = go.Figure()
+        for i in range(0, len(prod_fil.columns)):
+            fig.add_trace(go.Scatter(
+                x=prod_fil.index,
+                y=prod_fil.iloc[:, i],
+                name=prod_fil.columns[i],
+                hoverinfo='name+y',
+                mode='lines',
+                stackgroup='one'
+            ))
+        fig.update_layout(
+            hovermode="closest",
+            hoverdistance=100,
+            spikedistance=1000,
+            xaxis=dict(
+                nticks=20,
+                linecolor="#BCCCDC",
+                showspikes=True,
+                spikethickness=1,
+                spikedash="dot",
+                spikecolor="#999999",
+                spikemode="across",
+            ),
+            yaxis=dict(
+                title="Production (en millions d'unités)"),
+            legend=dict(
+                x=0,
+                y=1,
+                traceorder="normal",
+                bgcolor='rgba(0,0,0,0)',
+                font=dict(size=12)),
+            font=dict(family="IBM Plex Sans"),
+            title="<b>Proportion des types de productions au fil du temps</b>",
+            margin = dict(l=40, r=40, b=50)
+        )
+        st.plotly_chart(fig, use_container_width=True)
     if show:
         st.dataframe(prod)
 
-
+    st.markdown(
+        """
+        La production de contenu audiovisuel à commencer à prendre son essor à partir de la moitié des années 1910. 
+        La montée en puissance de la **production de séries TV commencer à partir du début des années 60** et 
+        explose à partir des années 2000 sans que cette dynamique semble fléchir. 
+        
+        La production cinématographique elle connait une croissance constante jusqu’à 2007 où 
+        les nouvelles sorties s’accélèrent.
+                
+         **Mais qui regarde tous ces films ?** La distribution générale des films confirme une prédominance 
+         du marché Nord-Américain. Comparativement, la France est à la **4eme position**, derrière l’Angleterre et 
+         le Japon, confirmant sa place de pays cinéphile. 
+        """
+    )
 
     country = load_df(country)
     df = px.data.gapminder().query("year==2007")
@@ -317,89 +371,103 @@ elif categorie == 'Presentation de la Base de données':
         locations=country.index,
         z=country['nb_mov'],
         text=country['country'],
-        colorscale=px.colors.sequential.Magma,
+        colorscale=px.colors.sequential.Sunsetdark,
         autocolorscale=False,
-        reversescale=True,
+        reversescale=False,
         marker_line_color='darkgray',
         marker_line_width=0.5,
         colorbar_title='Nombre de films',
     ))
     fig.update_layout(
-        title_text='2014 Global GDP',
+        dragmode=False,
+        title_text='<b> Où les films sont ils le plus distribués ? </b>',
+        margin=dict(l=40, r=40, b=40, t=40),
         geo=dict(
             showframe=False,
             showcoastlines=False,
             projection_type='natural earth'
         )
     )
+    fig.update_geos(bgcolor='rgba(0,0,0,0)')
     st.plotly_chart(fig, use_container_width=True)
     if show:
         st.dataframe(country)
 
-
-
+    st.markdown('---')
 
     st.subheader("Qu'est ce qui caractérise un bon film ?")
+
+    st.markdown(
+        """
+        Après ces présentations générales, nous pouvons analyser plus précisément la base de données 
+        des films, avec l’objectif de déterminer les critères qui font un _bon film_.
+        
+        Mais d'ailleur, **qu'est-ce qu'un bon film ?**
+        
+        Regardons la répartition des notes moyennes et du nombre de votes de tous les films.
+        """)
+
     col1, col2 = st.beta_columns(2)
     with col1:
-        st.markdown(
-        """
-        La *courbe bleue* montre différentes caractéristiques des films selon les décénnies.
-        Elles sont extraites de la base de données du site **imbd**.
-        """)
+        fig = px.box(data, y="Note", hover_data=["Titre"], notched=True, color_discrete_sequence=['deepskyblue'])
+        st.plotly_chart(fig, use_container_width=True)
     with col2:
-        st.markdown(
-            """
-        La *courbe orange* montre les mêmes indices selon le filtre selectionné.
-        Il suffit de modifier les curseurs pour modifier la plage de notes et de votes appliquée.
-        Par défaut, on retient les films ayant une **note supérieure à 7 pour plus de 3000 votes**.
+        fig = px.box(data, y="Votes", hover_data=["Titre"], notched=True, color_discrete_sequence=['coral'])
+        fig.update_traces(quartilemethod="exclusive")
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown(
+        """
+        Les boites à moustaches mettent bien en avant la présence de nombreux outliers, 
+        surtout dans le nombre de votes. On va arbitrairement choisir les **troisièmes quartiles** des deux variables 
+        pour fixer notre filtre par défaut, soit **une moyenne de 7 pour un nombre de votes supérieur à 3000**. 
+
+        Il est bien évidement possible de personaliser ce filtre.  
         """)
 
     # filters
-    filter_expand = st.beta_expander('Filtres')
+    defaults = st.selectbox("Filtres predéfinis",
+                            [
+                                {"name": "Par défaut",
+                                 "min_rate": 7,
+                                 "max_rate": 10,
+                                 "min_vote": 3000,
+                                 "max_vote": 150000
+                                 },
+                                {"name": "Les 1000 meilleurs films",
+                                 "min_rate": 7,
+                                 "max_rate": 10,
+                                 "min_vote": 170000,
+                                 "max_vote": 150000
+                                 },
+                                {"name": "Les 100 meilleurs films",
+                                 "min_rate": 8,
+                                 "max_rate": 10,
+                                 "min_vote": 740000,
+                                 "max_vote": 150000
+                                 },
+                                {"name": "Fin du classement",
+                                 "min_rate": 0,
+                                 "max_rate": 7,
+                                 "min_vote": tick_min,
+                                 "max_vote": 1500
+                                 },
+                                {"name": "Tout inclus",
+                                 "min_rate": 0,
+                                 "max_rate": 10,
+                                 "min_vote": tick_min,
+                                 "max_vote": 150000
+                                 },
+                            ],
+                            format_func=lambda option: option["name"]
+                            )
+    filter_expand = st.beta_expander('Personnaliser le filtre')
     with filter_expand:
-        defaults = st.selectbox("Filtres predéfinis",
-                                [
-                                    {"name": "Par défaut",
-                                     "min_rate": 7,
-                                     "max_rate": 10,
-                                     "min_vote": 3000,
-                                     "max_vote": 150000
-                                     },
-                                    {"name": "Les 1000 meilleurs films",
-                                     "min_rate": 7,
-                                     "max_rate": 10,
-                                     "min_vote": 170000,
-                                     "max_vote": 150000
-                                     },
-                                    {"name": "Les 100 meilleurs films",
-                                     "min_rate": 8,
-                                     "max_rate": 10,
-                                     "min_vote": 740000,
-                                     "max_vote": 150000
-                                     },
-                                    {"name": "Fin du classement",
-                                     "min_rate": 0,
-                                     "max_rate": 7,
-                                     "min_vote": tick_min,
-                                     "max_vote": 1500
-                                     },
-                                    {"name": "Tout inclus",
-                                     "min_rate": 0,
-                                     "max_rate": 10,
-                                     "min_vote": tick_min,
-                                     "max_vote": 150000
-                                     },
-                                ],
-                                format_func=lambda option: option["name"]
-                                )
         rating_filter = st.slider('Selectionnez une plage de notes', 0, 10, (defaults['min_rate'],
                                                                              defaults['max_rate']))
-
         vote_filter = st.slider('Selectionnez le nombre de votes '
                                 '(150.000 renvoie au maximum des votes)', tick_min, 150000, (defaults['min_vote'],
                                                                                              defaults['max_vote']))
-
     min_rate, max_rate = zip(rating_filter)
     min_pop = int(vote_filter[0])
     max_pop = int(vote_filter[1])
@@ -408,34 +476,41 @@ elif categorie == 'Presentation de la Base de données':
     else:
         max_pop = tick_max
 
-    # percent of best
-    total_decade = data.groupby((data['Année'] // 10) * 10).count()
-    best_mov = fav_filter(data)
-    best_decade = best_mov.groupby((data['Année'] // 10) * 10).count()
+    col1, col2 = st.beta_columns(2)
+    with col1:
+        st.title("")
+        st.markdown(
+        """
+        **Est-ce que c’était vraiment mieux avant ?** Globalement **non**.
+        Le pourcentage de bon film par rapport au nombre total de films se situe en moyenne entre 8% et 10%. 
+        
+        Petite exception pour les années 90 et 2000 qui bénéficient de 2 points supplémentaires. 
+        
+        Pour la suite, :
+        - la **courbe bleue** représentera le données moyennes pour **tous les films**, 
+        - la **courbe orange** représentera les données moyennes pour les **_bon films_**.
+        """)
+    with col2:
+        # percent of best
+        total_decade = data.groupby((data['Année'] // 10) * 10).count()
+        best_mov = fav_filter(data)
+        best_decade = best_mov.groupby((data['Année'] // 10) * 10).count()
 
-    percent_best = best_decade[['Titre']].rename(columns={'Titre': 'Meilleurs films'}).loc[1920:2020]
-    percent_best['Total'] = total_decade[['Titre']].rename(columns={'Titre': 'Total'}).loc[1920:2020]
-    percent_best['Pourcentage'] = (percent_best['Meilleurs films'] * 100) / percent_best['Total']
+        percent_best = best_decade[['Titre']].rename(columns={'Titre': 'Meilleurs films'}).loc[1920:2020]
+        percent_best['Total'] = total_decade[['Titre']].rename(columns={'Titre': 'Total'}).loc[1920:2020]
+        percent_best['Pourcentage'] = (percent_best['Meilleurs films'] * 100) / percent_best['Total']
 
-    fig = px.bar(percent_best, x=percent_best.index, y='Pourcentage',
-                 title='<b>Proportion des films selon le filtre</b> (en pourcents)',
-                 color_discrete_sequence=['coral'])
-    fig.update_yaxes(title=None, tick0=True, nticks=12)
-    fig.update_xaxes(title=None, nticks=12)
-    fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
-                      margin=dict(l=30, r=30, b=30))
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.bar(percent_best, x=percent_best.index, y='Pourcentage',
+                     title='<b>Proportion des films selon le filtre</b> (en pourcents)',
+                     color_discrete_sequence=['coral'])
+        fig.update_yaxes(title=None, tick0=True, nticks=12)
+        fig.update_xaxes(title=None, nticks=12)
+        fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
+                          margin=dict(l=30, r=30, b=30),
+                          height=350)
+        st.plotly_chart(fig, use_container_width=True)
     if show:
         st.dataframe(percent_best)
-
-    st.markdown(
-        """
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.
-        Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.
-        Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi.
-        Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat.
-        """
-    )
 
     # Runtime
     temp_tab = data[data['Durée'] != '\\N'][['Année', 'Durée', 'Note', 'Votes']]
@@ -447,17 +522,37 @@ elif categorie == 'Presentation de la Base de données':
     mov_runtime.fillna(mov_runtime['Filtrés'].median(), inplace=True)
 
     fig = px.line(mov_runtime, x=mov_runtime.index, y=["Durée", "Filtrés"],
-                  title='<b>Durée moyenne</b> (en mintues)',
+                  title='<b>Evolution de la durée des films en 100 ans</b> (en mintues)',
                   color_discrete_map={
                       'Durée': 'deepskyblue',
                       'Filtrés': 'coral'})
     fig.update_yaxes(title=None, tick0=True, nticks=12)
-    fig.update_xaxes(title=None, nticks=12)
+    fig.update_xaxes(title=None, nticks=12,
+                     linecolor="#BCCCDC",
+                     showspikes=True,
+                     spikethickness=2,
+                     spikedash="dot",
+                     spikecolor="#999999",
+                     spikemode="across")
     fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
+                      hovermode="x",
+                      hoverdistance=100,
+                      spikedistance=1000,
                       margin=dict(l=30, r=30, b=30))
     st.plotly_chart(fig, use_container_width=True)
     if show:
         st.dataframe(mov_runtime)
+
+    st.markdown(
+        """
+        Première analyse comparative permet de constater que depuis les années 1920, 
+        **les films ont gagné environ une demi-heure**. Cette tendance semble assez stable 
+        depuis le milieu le début des années 60.
+
+        Les bons films sont quant à eux plus long de vingt minutes supplémentaires en moyenne. 
+        Un bon film serait, en moyenne, plutot un film long. 
+        """
+    )
 
     # Age
     age = data_crew[(data_crew['category'].isin(['actor', 'actress'])) & (data_crew['Naissance'] != '\\N')]
@@ -480,6 +575,14 @@ elif categorie == 'Presentation de la Base de données':
     if show:
         st.dataframe(age_chart)
 
+    st.markdown(
+        """
+        Enfin, **l’âge des acteurs ne semble pas être un critère discriminant entre les bons et les mauvais films**.
+
+        En revanche, on peut noter une augmentation de la moyenne d’âge des acteurs à partir des années 2010, 
+        qui **passe de 37 ans à 44 ans, soit 7 ans en plus**. 
+        """
+    )
 
 elif categorie == 'Femme et Cinéma':
 
