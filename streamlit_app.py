@@ -199,6 +199,11 @@ if categorie == 'Quoi voir ?':
 
 st.sidebar.title(' ')
 option = st.sidebar.beta_expander("Options")
+option.markdown(
+    """
+    L'option _Montre moi la data_ affichera les données 
+    qui ont permis de réaliser les graphiques, sous forme de tableaux. 
+    """)
 show = option.checkbox('Montre moi la data')
 
 expander = st.sidebar.beta_expander("Sources")
@@ -210,8 +215,8 @@ expander.markdown(
     [Base de donnée Netflix](https://en.wikipedia.org/wiki/Lists_of_Netflix_original_films) : 
     Les films exclusifs à la plaforme Netflix ont été retirés.
     """)
-expander.info('Résiliation de la **Team MORE** : '
-              '_Alhem, Fanyme, Michael, Raphael, Soufiane_')
+expander.info('Résiliation de la **Team MORE** : _Alhem, Fanyme, Michael, Raphael, Soufiane_')
+expander.info('Projet de la **WildCodeSchool** livré le 07/05/2021')
 
 
 ##########
@@ -305,7 +310,7 @@ elif categorie == 'Presentation de la Base de données':
         )
         filter_type = st.multiselect(label='Selectionnez les Types ?', options=list(prod.columns),
                                      default=['movie', 'short', 'tvEpisode'],
-                                     help='Seuls les types principaux ont été retenus',)
+                                     help='Seuls les types principaux ont été retenus par défaut',)
     prod_fil = pd.DataFrame(index=prod.index)
     for col in filter_type:
         if col in prod.columns:
@@ -389,9 +394,16 @@ elif categorie == 'Presentation de la Base de données':
         )
     )
     fig.update_geos(bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig, use_container_width=True)
+
     if show:
-        st.dataframe(country)
+        col1, col2 = st.beta_columns([3, 1])
+        with col1:
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.title(' ')
+            st.dataframe(country, height=360)
+    else:
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('---')
 
@@ -488,7 +500,7 @@ elif categorie == 'Presentation de la Base de données':
         
         Pour la suite, :
         - la **courbe bleue** représentera le données moyennes pour **tous les films**, 
-        - la **courbe orange** représentera les données moyennes pour les **_bon films_**.
+        - la **courbe orange** représentera les données moyennes pour les **_bons films_**.
         """)
     with col2:
         # percent of best
@@ -502,15 +514,18 @@ elif categorie == 'Presentation de la Base de données':
 
         fig = px.bar(percent_best, x=percent_best.index, y='Pourcentage',
                      title='<b>Proportion des films selon le filtre</b> (en pourcents)',
-                     color_discrete_sequence=['coral'])
-        fig.update_yaxes(title=None, tick0=True, nticks=12)
+                     color_discrete_sequence=['coral'], text=percent_best['Pourcentage'].round(2))
+        fig.update_yaxes(title=None, tick0=True, nticks=12, ticksuffix="%",
+                         range=[0, percent_best['Pourcentage'].max()*1.1])
         fig.update_xaxes(title=None, nticks=12)
+        fig.update_traces(texttemplate='%{text}%', textposition='outside')
         fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
                           margin=dict(l=30, r=30, b=30),
                           height=350)
         st.plotly_chart(fig, use_container_width=True)
     if show:
-        st.dataframe(percent_best)
+        col1, col2 = st.beta_columns(2)
+        col2.dataframe(percent_best)
 
     # Runtime
     temp_tab = data[data['Durée'] != '\\N'][['Année', 'Durée', 'Note', 'Votes']]
@@ -539,9 +554,15 @@ elif categorie == 'Presentation de la Base de données':
                       hoverdistance=100,
                       spikedistance=1000,
                       margin=dict(l=30, r=30, b=30))
-    st.plotly_chart(fig, use_container_width=True)
     if show:
-        st.dataframe(mov_runtime)
+        col1, col2 = st.beta_columns([3, 1])
+        with col1:
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.title(' ')
+            st.dataframe(mov_runtime, height=380)
+    else:
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown(
         """
@@ -571,9 +592,17 @@ elif categorie == 'Presentation de la Base de données':
     fig.update_xaxes(title=None, nticks=12)
     fig.update_layout(showlegend=False, font_family='IBM Plex Sans',
                       margin=dict(l=30, r=30, b=30))
-    st.plotly_chart(fig, use_container_width=True)
+
     if show:
-        st.dataframe(age_chart)
+        col1, col2 = st.beta_columns([3, 1])
+        with col1:
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.title(' ')
+            st.title(' ')
+            st.dataframe(age_chart)
+    else:
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown(
         """
@@ -676,7 +705,7 @@ elif categorie == 'Femme et Cinéma':
         margin=dict(l=30, r=30, b=30, t=70),
         autosize=False,
         plot_bgcolor='rgba(0,0,0,0)',
-        title="<b>Proportion d'actrices présente au grand écran par décennies</b>",
+        title="<b>Proportion d'actrices présente sur le grand écran par décennies</b>",
         barmode='stack')
     st.plotly_chart(fig, use_container_width=True)
 
@@ -749,7 +778,7 @@ elif categorie == 'Femme et Cinéma':
                             [
                                 {"name": "Par défaut",
                                  "min_rate": 7,
-                                 "min_vote": 1500,
+                                 "min_vote": 3000,
                                  },
                                 {"name": "Les 1000 meilleurs films",
                                  "min_rate": 7,
@@ -902,26 +931,33 @@ elif categorie == 'Les TOP par décennies':
     """)
 
     data = load_data(REPRO_DB)
-    # create a filter
-    start_year = st.slider('Décennie', 1920, 2020, 1990, 10)
-    stop_year = start_year + 10
 
-    # display best all times
-    if st.button('Toutes les années confondues'):
-        start_year = 1920
-        stop_year = 2020
+    st.title(' ')
+    col1, col2 = st.beta_columns([2, 1])
+    with col2:
+        TOP_choice = st.radio("Type de TOP",
+                                     ('Par décennies', 'Par Année', 'Toutes années confondues'))
+        expander = st.beta_expander("indice MORE ?")
+        expander.markdown("**L'indice MORE** permet de lier le nombre de votes et la note d'un film "
+                          "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 40) "
+                          "plus le film est populaire. "
+                          "Pour les autres catégories que les films, c'est la moyenne des indices sur la décennie "
+                          "selectionnée qui est calculée."
+                          )
 
-    # filter tables
-    filtre = st.selectbox(
-        'Vous souhaitez filtrer par :',
-        ['indice MORE', 'Votes', 'Total', 'Note'])
-    expander = st.beta_expander("indice MORE ?")
-    expander.markdown("**L'indice MORE** permet de lier le nombre de votes et la note d'un film "
-                      "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 40) "
-                      "plus le film est populaire. "
-                      "Pour les autres catégories que les films, c'est la moyenne des indices sur la décennie "
-                      "selectionnée qui est calculée."
-                      )
+    with col1:
+        if TOP_choice == 'Par décennies':
+            start_year = st.slider('Décennie', 1920, 2020, 1990, 10)
+            stop_year = start_year + 10
+        if TOP_choice == 'Par Année':
+            start_year = st.slider('Décennie', 1920, 2020, 1990, 1)
+            stop_year = start_year + 1
+        if TOP_choice == 'Toutes années confondues':
+            start_year = 1920
+            stop_year = 2020
+        filtre = st.selectbox(
+            'Vous souhaitez filtrer par :',
+            ['indice MORE', 'Votes', 'Total', 'Note'])
 
     filtered_data = data[(data['Année'] >= start_year) & (data['Année'] < stop_year)]
 
@@ -1008,7 +1044,7 @@ elif categorie == 'Quoi voir ?':
             y = ml_db['Note'].round(0)
 
             if speed:
-                pca = PCA(n_components=0.60).fit(X)
+                pca = PCA(n_components=0.65).fit(X)
                 X = pca.transform(X)
 
             modelMORE = KNeighborsClassifier(weights='distance', n_neighbors=5).fit(X, y)
