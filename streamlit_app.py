@@ -266,7 +266,7 @@ if categorie == "Qu'est-ce que le projet MORE ?":
     pour apporter les meilleures recommandations :
     * de films proches d'un seul et unique film
     * de films pouvant accompagner une oeuvre dans le cadre d'une rétrospective 
-    la probabilité d'aimé un films compte tenu d’une sélection de films.
+    * la probabilité d'aimé un films compte tenu d’un profil utilisateur.
     
     Il ne vous reste plus qu’à explorer les sections !   
     """)
