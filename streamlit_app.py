@@ -193,19 +193,19 @@ st.markdown("""
 st.sidebar.title('Projet MORE')
 st.sidebar.subheader('Navigation')
 
-categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Presentation de la Base de données',
-                                           'Femme et Cinéma', 'Les TOP par décennies', 'Quoi voir ?'))
+categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Présentation de la base de données',
+                                           'Femmes et cinéma', 'Les Top par décennie', 'Quoi voir ?'))
 if categorie == 'Quoi voir ?':
     sub_categorie = st.sidebar.radio("Machine Learning", ('Recommandation de films',
-                                                          'Restrospectives',
-                                                          'Probabilité que vous aimiez ce film'))
+                                                          'Rétrospectives',
+                                                          'Probabilités d\'aimer ce film'))
 
 st.sidebar.title(' ')
 option = st.sidebar.beta_expander("Options")
 option.markdown(
     """
     L'option _Montre moi la data_ affichera les données 
-    qui ont permis de réaliser les graphiques, sous forme de tableaux. 
+    qui ont permis de réaliser les graphiques. 
     """)
 show = option.checkbox('Montre moi la data')
 
@@ -218,7 +218,7 @@ expander.markdown(
     [Base de donnée Netflix](https://en.wikipedia.org/wiki/Lists_of_Netflix_original_films) : 
     Les films exclusifs à la plaforme Netflix ont été retirés.
     """)
-expander.info('Résiliation de la **Team MORE** : _Alhem, Fanyme, Michael, Raphael, Soufiane_')
+expander.info('Composition de la **Team MORE** : _Alhem, Fanyim, Michael, Raphaël, Soufiane_')
 expander.info('Projet de la **WildCodeSchool** livré le 07/05/2021')
 
 
@@ -247,26 +247,25 @@ tick_min = data['Votes'].min().item()
 if categorie == "Qu'est-ce que le projet MORE ?":
 
     st.title('Projet MORE ')
-    st.subheader('Movie Recommandation programme')
+    st.subheader('MOvie REcommandation')
     st.title(" ")
 
     st.markdown("""
-    Bienvenu dans le Projet MORE.
-    
-    Ce projet a pour objectif de fournir les outils d’analyse d’une base de données de films, 
+    Le projet MORE a pour objectif de fournir les outils d’analyse d’une base de données de films, 
     afin d'en comprendre les **indices clés**. 
     
     Les deux premières parties mettent à disposition des **données comparatives sur le monde du cinéma** 
-    en se concentrant sur la comparaison entre les meilleurs films et la moyenne des films 
-    ou sur la place des femmes dans le cinéma. 
+    en se concentrant sur la comparaison entre : 
+    * les meilleurs films et la moyenne des films 
+    * la place des femmes dans le cinéma
     
-    La section suivante génère des **TOP 10**, de films, d’acteurs et de réalisateurs, 
-    compte tenu de critères que vous aurez déterminés (une décennie ou un genre). 
+    La section suivante génère des **Top 10**, de films, d’acteurs et de réalisateurs, 
+    selon des critères de décennie ou de genre. 
     
-    Enfin, la dernière section met à profit la puissance du **Machine Learning** 
-    pour apporter les meilleures recommandations de films, 
-    que ce soit la recommandation de films proches qu’un film selectionné, 
-    la proposition de films dans le cadre d’une rétrospective et enfin, 
+    Enfin, la dernière section met à profit la puissance du **Machine learning** 
+    pour apporter les meilleures recommandations :
+    * de films proches d'un seul et unique film
+    * de films pouvant accompagner une oeuvre dans le cadre d'une rétrospective 
     la probabilité d'aimé un films compte tenu d’une sélection de films.
     
     Il ne vous reste plus qu’à explorer les sections !   
@@ -279,23 +278,23 @@ if categorie == "Qu'est-ce que le projet MORE ?":
         st.image('https://github.com/MickaelKohler/Projet_MORE/raw/main/Ressources/sub.png')
 
 
-elif categorie == 'Presentation de la Base de données':
-    st.title('Presentation de la Base de données')
+elif categorie == 'Présentation de la base de données':
+    st.title('Présentation de la base de données')
     st.subheader("La face cachée des chiffres")
 
     st.markdown(
         """
         Afin d’avoir une vision générale des productions cinématographique, nous avons utilisé la base de données 
-        mise à disposition par le **site de IMDb**, acronyme de _Internet Movie Database_.
+        mise à disposition par le **_Internet Movie Database_** (IMDb).
         
         La base de donnée est mise à jour quotidiennement, mais pour les besoins de la présentation, 
         **les données ont été arrêtées à début mai 2021**.  
 
         Puisque le site est américain (propriété d’Amazon), le public est aussi à majorité anglo-saxonne, 
         ce qui va se ressentir dans le nombre de votes des films français. 
-        Il ne faudra pas oublier cette donnée lors des différentes analyses. 
+        Il ne faudra pas occulter ce biais lors des différentes analyses. 
 
-        Après cette première présentation, nous pouvons commencer par quelques observations générales. 
+        Nous pouvons ensuite dresser quelques observations générales. 
         """
     )
 
@@ -311,7 +310,7 @@ elif categorie == 'Presentation de la Base de données':
             et **les films n'arrivent qu'en troisième position**, avec moins d'un million d'unités.
             """
         )
-        filter_type = st.multiselect(label='Selectionnez les Types ?', options=list(prod.columns),
+        filter_type = st.multiselect(label='Selectionnez les types ?', options=list(prod.columns),
                                      default=['movie', 'short', 'tvEpisode'],
                                      help='Seuls les types principaux ont été retenus par défaut',)
     prod_fil = pd.DataFrame(index=prod.index)
@@ -360,15 +359,15 @@ elif categorie == 'Presentation de la Base de données':
 
     st.markdown(
         """
-        La production de contenu audiovisuel à commencer à prendre son essor à partir de la moitié des années 1910. 
-        La montée en puissance de la **production de séries TV commencer à partir du début des années 60** et 
+        La production de contenus audiovisuels a commencé à prendre son essor à partir de la moitié des années 1910. 
+        La montée en puissance de la **production de séries TV démarre au début des années 1960**, et 
         explose à partir des années 2000 sans que cette dynamique semble fléchir. 
         
-        La production cinématographique elle connait une croissance constante jusqu’à 2007 où 
+        Quant à elle, la production cinématographique connaît une croissance constante jusqu’à 2007 où 
         les nouvelles sorties s’accélèrent.
                 
          **Mais qui regarde tous ces films ?** La distribution générale des films confirme une prédominance 
-         du marché Nord-Américain. Comparativement, la France est à la **4eme position**, derrière l’Angleterre et 
+         du marché nord-américain. Comparativement, la France est à la **quatrième position**, derrière l’Angleterre et 
          le Japon, confirmant sa place de pays cinéphile. 
         """
     )
@@ -410,14 +409,14 @@ elif categorie == 'Presentation de la Base de données':
 
     st.markdown('---')
 
-    st.subheader("Qu'est ce qui caractérise un bon film ?")
+    st.subheader("Qu'est-ce qui caractérise un \"bon\" film ?")
 
     st.markdown(
         """
         Après ces présentations générales, nous pouvons analyser plus précisément la base de données 
-        des films, avec l’objectif de déterminer les critères qui font un _bon film_.
+        des films, avec l’objectif de déterminer les critères qui font un _"bon" film_.
         
-        Mais d'ailleur, **qu'est-ce qu'un bon film ?**
+        Mais d'ailleurs, **qu'est-ce qu'un bon film ?**
         
         Regardons la répartition des notes moyennes et du nombre de votes de tous les films.
         """)
@@ -433,11 +432,11 @@ elif categorie == 'Presentation de la Base de données':
 
     st.markdown(
         """
-        Les boites à moustaches mettent bien en avant la présence de nombreux outliers, 
-        surtout dans le nombre de votes. On va arbitrairement choisir les **troisièmes quartiles** des deux variables 
+        Les boîtes à moustaches mettent bien en avant la présence de nombreux outliers, 
+        surtout dans le nombre de votes. On va arbitrairement choisir les **troisièmes quartiles** de ces deux variables 
         pour fixer notre filtre par défaut, soit **une moyenne de 7 pour un nombre de votes supérieur à 3000**. 
 
-        Il est bien évidement possible de personaliser ce filtre.  
+        Il est bien évidement possible de modifier ce filtre.  
         """)
 
     # filters
@@ -449,7 +448,7 @@ elif categorie == 'Presentation de la Base de données':
                                  "min_vote": 3000,
                                  "max_vote": 150000
                                  },
-                                {"name": "Les 1000 meilleurs films",
+                                {"name": "Les 1 000 meilleurs films",
                                  "min_rate": 7,
                                  "max_rate": 10,
                                  "min_vote": 170000,
@@ -480,7 +479,7 @@ elif categorie == 'Presentation de la Base de données':
     with filter_expand:
         rating_filter = st.slider('Selectionnez une plage de notes', 0, 10, (defaults['min_rate'],
                                                                              defaults['max_rate']))
-        vote_filter = st.slider('Selectionnez le nombre de votes '
+        vote_filter = st.slider('Sélectionnez le nombre de votes '
                                 '(150.000 renvoie au maximum des votes)', tick_min, 150000, (defaults['min_vote'],
                                                                                              defaults['max_vote']))
     min_rate, max_rate = zip(rating_filter)
@@ -496,14 +495,14 @@ elif categorie == 'Presentation de la Base de données':
         st.title("")
         st.markdown(
         """
-        **Est-ce que c’était vraiment mieux avant ?** Globalement **non**.
-        Le pourcentage de bon film par rapport au nombre total de films se situe en moyenne entre 8% et 10%. 
+        **Est-ce que c’était vraiment mieux avant ?** Globalement... **non**.
+        Le pourcentage de bons films par rapport au total des oeuvres se situe en moyenne entre 8% et 10%. 
         
-        Petite exception pour les années 90 et 2000 qui bénéficient de 2 points supplémentaires. 
+        Petite exception pour les années 1990 et 2000 qui bénéficient de 2 points supplémentaires. 
         
         Pour la suite, :
-        - la **courbe bleue** représentera le données moyennes pour **tous les films**, 
-        - la **courbe orange** représentera les données moyennes pour les **_bons films_**.
+        * la **courbe bleue** représentera le données moyennes pour **tous les films**, 
+        * la **courbe orange** représentera les données moyennes pour les **_bons films_**.
         """)
     with col2:
         # percent of best
@@ -569,12 +568,12 @@ elif categorie == 'Presentation de la Base de données':
 
     st.markdown(
         """
-        Première analyse comparative permet de constater que depuis les années 1920, 
+        Une première analyse comparative permet de constater que depuis les années 1920, 
         **les films ont gagné environ une demi-heure**. Cette tendance semble assez stable 
-        depuis le milieu le début des années 60.
+        depuis le milieu le début des années 1960.
 
-        Les bons films sont quant à eux plus longs de vingt minutes supplémentaires en moyenne. 
-        Un bon film serait, en moyenne, plutot un film long. 
+        Les bons films sont quant à eux plus longs de vingt minutes en moyenne. 
+        Un bon film serait, en moyenne, plutôt un film long. 
         """
     )
 
@@ -621,7 +620,7 @@ elif categorie == 'Presentation de la Base de données':
     st.subheader('Une étude des genres : un _Drama_ en 2 actes.')
     st.markdown(
         """
-        En conclusion, on va faire un focus sur les genres des films tels qu’ils sont défini par IMDb. 
+        Penchons-nous sur les genres des films tels qu’ils sont définis par IMDb. 
         Le site a donné un descriptif de chaque genre sur [ce lien]
         (https://help.imdb.com/article/contribution/titles/genres/GZDRMS6R742JRGAG#).
 
@@ -669,12 +668,12 @@ elif categorie == 'Presentation de la Base de données':
     st.markdown(
         """
         On note tout de suite que le genre le plus présent dans la base de données est **_Drama_, 
-        qui ressort dans un peu moins de 30% des films**, suivi de _Comédie_.
+        qui ressort dans un peu moins de 30% des films**, suivi de _Comedy_.
 
-        Il est toutefois victime de son succès, puisque selon que l’on cherche par vote moyen ou par nombre 
-        de votre, le genre _Drama_ tombe largement das le classement.
+        Il est toutefois victime de son succès, puisque selon que l’on cherche par note moyenne ou par nombre 
+        de votre, le genre _Drama_ tombe largement dans le classement.
         
-        A ce jeu-là, le genre _Sci_Fi_ devient le grand vainqueur de la popularité alors que les genres 
+        À ce petit jeu, le genre _Sci_Fi_ sort grand vainqueur de la popularité alors que les genres 
         qui se collent à la réalité (_Documentaires_ et _Biographies_) reçoivent  la meilleure moyenne. 
         """
     )
@@ -722,24 +721,24 @@ elif categorie == 'Presentation de la Base de données':
         if show:
             st.dataframe(pop_genres)
 
-elif categorie == 'Femme et Cinéma':
+elif categorie == 'Femmes et cinéma':
 
     data_crew = load_data(REPRO_DB)
     actors = data_crew[data_crew['category'].isin(['actor', 'actress'])]
 
     col1, col2 = st.beta_columns(2)
     with col1:
-        st.title('La place des Femmes dans le Cinéma')
+        st.title('La place des femmes dans le cinéma')
         st.title(' ')
         st.markdown(
             """
             *Je ne suis pas une femme qui fait du cinéma, mais quelqu’un qui fait du cinéma*, Coline Serreau
     
             Au-delà des tapis rouges et de la grande famille du cinéma,
-            l’envers du décor montre une situation plus inégale qu’il n’y parait.
+            l’envers du décor montre une situation plus inégale qu’il n’y paraît.
     
-            Cette rubrique est l’occasion de donner un coup de projecteur sur les inégalités
-            portant sur la représentation de la femme au cinéma et le rôle qu’elle occupe dans les films. 
+            Cette rubrique entend donner un coup de projecteur sur les inégalités
+            concernant la représentation de la femme au cinéma et le rôle qu’elle occupe dans les films. 
             """)
     with col2:
         prop_total = actors.value_counts('category', normalize=True)
@@ -763,8 +762,8 @@ elif categorie == 'Femme et Cinéma':
 
     st.markdown("""
         Si la proportion d'actrices dans la base de données est inférieure à 40%, la situation est évidement la même
-        sur dans la distribution des roles. **Les femmes représent généralement moins de 35% des personnes à l'écran**,
-        même si on note une légère tendence vers l'équilibre à partir des années 90.
+        pour la distribution des roles. **Les femmes représent généralement moins de 35% des personnes à l'écran**,
+        même si on note une légère tendence vers l'équilibre à partir des années 1990.
     """)
 
     # proportion d'actrices
@@ -814,12 +813,12 @@ elif categorie == 'Femme et Cinéma':
         margin=dict(l=30, r=30, b=30, t=70),
         autosize=False,
         plot_bgcolor='rgba(0,0,0,0)',
-        title="<b>Proportion d'actrices présente sur le grand écran par décennies</b>",
+        title="<b>Proportion d'actrices présente sur le grand écran par décennie</b>",
         barmode='stack')
     st.plotly_chart(fig, use_container_width=True)
 
     st.write("""
-        On peut constater que l'actrice est avant tout une femme jeune.
+        On peut constater que l'actrice recrutée est avant tout une femme jeune.
         La différence d'age moyenne entre acteur et actrice se maintient à 10 ans environ,
         même si on peut constater un léger fléchissement depuis les années 80. 
     """)
@@ -842,7 +841,7 @@ elif categorie == 'Femme et Cinéma':
     final = pd.concat([actor_age, actress_age, diff_age]).reset_index()
 
     layout = go.Layout(
-        title="<b>Age moyen des acteurs et des actrices lors du tournage d'un film</b>",
+        title="<b>Âge moyen des acteurs et des actrices lors du tournage d'un film</b>",
         font=dict(family="IBM Plex Sans"),
         hovermode="x",
         hoverdistance=100,
@@ -902,7 +901,7 @@ elif categorie == 'Femme et Cinéma':
                             )
     filter_expand = st.beta_expander('Détails du filtre')
     with filter_expand:
-        min_rate = st.slider('Selectionnez une notes minimale', 0, 10, defaults['min_rate'])
+        min_rate = st.slider('Selectionnez une note minimale', 0, 10, defaults['min_rate'])
         min_pop = st.slider('Selectionnez un nombre de votes minimal ', tick_min, tick_max, defaults['min_vote'])
         max_rate, max_pop = 10, tick_max
 
@@ -958,18 +957,18 @@ elif categorie == 'Femme et Cinéma':
             st.title(" ")
             st.markdown(
                 f"""
-                Si peu de films n'ont aucune femme dans leur casting, 
-                on peut constater que les actrices sont généralement placées en retrait
+                Si peu de films ne comptent aucune femme dans leur casting, 
+                on peut constater que les actrices sont généralement en retrait
                 et interviennent surtout pour des seconds rôles.
         
-                Un **filtre**, ci dessus, permet de changer la popularité des films étudiés,
+                Un **filtre** ci-dessus permet de changer la popularité des films étudiés,
                 et de mettre en avant l’aggravation des inégalités 
                 dès lors qu’on se rapproche des films les plus populaires.
         
                 La popularité se ressent aussi au niveau du nombre de votes 
-                qui est inférieur dès lors que l'actrice tient le role principal.
+                qui est inférieur dès lors que l'actrice tient le rôle principal.
         
-                Pour un premier role, on constate en moyenne **{round(nb_vote_W) if nb_vote_W > 0 else 0 } votes 
+                Pour un premier rôle, on constate en moyenne **{round(nb_vote_W) if nb_vote_W > 0 else 0 } votes 
                 pour une actrice**, contre **{round(nb_votes_M)} votes pour un acteur**, 
                 soit un **nombre de votre inférieur de 
                 {round(100 - ((nb_vote_W * 100) / nb_votes_M)) if nb_vote_W > 0 else 100 } %**.
@@ -1023,20 +1022,20 @@ elif categorie == 'Femme et Cinéma':
         if show:
             st.title('')
             st.markdown('**Détail des films de la selection**')
-            st.markdown('Le role principal est tenu par une actrice : ')
+            st.markdown('Le rôle principal est tenu par une actrice : ')
             st.dataframe(best_actors[(best_actors['category'] == 'actress') & (best_actors['Ordre'] == 1)])
-            st.markdown('Le role principal est tenu par un acteur : ')
+            st.markdown('Le rôle principal est tenu par un acteur : ')
             st.dataframe(best_actors[(best_actors['category'] == 'actor') & (best_actors['Ordre'] == 1)])
     except KeyError:
-        st.error("Cette configuration ne fait plus apparaitre d'actrices dans le classement. "
+        st.error("Cette configuration ne fait plus apparaître d'actrices dans le classement. "
                  "Les rôles ne sont tenus que par des hommes.")
 
 
-elif categorie == 'Les TOP par décennies':
-    st.title('Les TOP par décennies')
+elif categorie == 'Les Top par décennie':
+    st.title('Les Top par décennie')
 
     st.write("""
-    Classement selon les données présentes sur la platforme **imbd**
+    Classement selon les données présentes sur la **IMDb**
     """)
 
     data = load_data(REPRO_DB)
@@ -1044,22 +1043,22 @@ elif categorie == 'Les TOP par décennies':
     st.title(' ')
     col1, col2 = st.beta_columns([2, 1])
     with col2:
-        TOP_choice = st.radio("Type de TOP",
-                                     ('Par décennies', 'Par Année', 'Toutes années confondues'))
-        select_genres = st.checkbox('Selectionner un genre de film')
+        TOP_choice = st.radio("Type de Top",
+                                     ('Par décennie', 'Par année', 'Toutes années confondues'))
+        select_genres = st.checkbox('Sélectionner un genre de film')
         expander = st.beta_expander("indice MORE ?")
         expander.markdown("**L'indice MORE** permet de lier le nombre de votes et la note d'un film "
-                          "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 40) "
+                          "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 42) "
                           "plus le film est populaire. "
                           "Pour les autres catégories que les films, c'est la moyenne des indices sur la décennie "
                           "selectionnée qui est calculée."
                           )
 
     with col1:
-        if TOP_choice == 'Par décennies':
+        if TOP_choice == 'Par décennie':
             start_year = st.slider('Décennie', 1920, 2020, 1990, 10)
             stop_year = start_year + 10
-        if TOP_choice == 'Par Année':
+        if TOP_choice == 'Par année':
             start_year = st.slider('Décennie', 1920, 2020, 1990, 1)
             stop_year = start_year + 1
         if TOP_choice == 'Toutes années confondues':
@@ -1134,14 +1133,14 @@ elif categorie == 'Les TOP par décennies':
         top_act.index = top_act.index + 1
         st.table(top_act.iloc[0:10])
     else:
-        st.warning('Merci de selectionner le genre  de film de votre selection. '
+        st.warning('Merci de sélectionner le genre de film. '
                    'Il faut selectionner au **minimum 1** genre et au **maximum 3**')
 
 
 elif categorie == 'Quoi voir ?':
     if sub_categorie == 'Recommandation de films':
         st.title('Recommandation de films')
-        st.subheader('Laissez vous seduire par la magie du Machine Learning')
+        st.subheader('Laissez-vous seduire par la magie du Machine Learning')
 
         # data
         ml_db = load_data(ML_DB).sort_values('indice MORE', ascending=False).reset_index(drop=True)
@@ -1151,7 +1150,7 @@ elif categorie == 'Quoi voir ?':
             Cet outil permet d'utiliser toute la puissance du *Machine Learning* pour vous proposer des films qui sont
             le plus en proches de vos goûts.
     
-            Afin de de vous faire une proposition, nous vous invitons à selectionner un de vos films favoris pour que 
+            Afin de de vous faire une proposition, nous vous invitons à sélectionner un de vos films favoris pour que 
             l'outil MORE puisse l'analyser et vous proposer des films proches
             parmis **une selection de {ml_db.index[-1]} films**.
             """
@@ -1233,14 +1232,17 @@ elif categorie == 'Quoi voir ?':
                     col.image(picture(index_mov))
 
 
-    if sub_categorie == 'Restrospectives':
+    if sub_categorie == 'Rétrospectives':
         st.title('Restrospectives')
         st.subheader("Organisez des rétrospectives à l'aide de l'**Intelligence Artificielle**.")
         st.markdown(
             f"""
-            Idée de rétro ? 
-            
-            Au boulot !
+            De bonnes rétrospectives donnent du cachet aux cinémas qui les diffuse, et nous pensons pouvoir
+            vous aider à acquérir une excellente réputation en la matière. Cela se passe encore une fois avec des algorithmes
+            d'apprentissage automatique.
+
+            Objectif cette fois-ci : classer les films par probabilité d'être "bon", et extraire les films d'un même réalisateur
+            ou d'une même décennie s'approchant d'une oeuvre de votre choix.
             """
         )
 
@@ -1268,7 +1270,7 @@ elif categorie == 'Quoi voir ?':
 
             # class retrospective
             movies_selection = Retrospective(film=movie, type_retro=retro).propo_retro()
-            st.subheader('Pour votre rétospective, nous vous proposons les films suivants : ')
+            st.subheader('Pour votre rétrospective, nous vous proposons les films suivants : ')
             cols = st.beta_columns(len(movies_selection))
             for i, col in enumerate(cols):
                 index_mov = ml_db[ml_db['tconst'] == movies_selection.iloc[i, 0]][['tconst', 'Titre']]
@@ -1280,7 +1282,7 @@ elif categorie == 'Quoi voir ?':
                 st.dataframe(movies_selection)
 
 
-    if sub_categorie == 'Probabilité que vous aimiez ce film':
+    if sub_categorie == 'Probabilités d\'aimer ce film':
         st.title('Est-ce que ce film va me plaire ?')
         st.subheader('Ne perdez plus votre temps avec des films qui ne vous correspondent pas')
         st.markdown(
@@ -1300,7 +1302,7 @@ elif categorie == 'Quoi voir ?':
             user_profil = st.multiselect('Constituer votre profil : Quels sont les films que vous aimez ?',
                                          ml_db['Titre'],
                                          help='Il est conseillé de selectionner au moins 3 films. '
-                                              'Plus vous selectionnez de films plus la recommandation sera pertinante')
+                                              'Plus vous selectionnez de films, plus la recommandation sera pertinente')
             movie_selected = st.selectbox('Choisissez le film que vous souhaitez voir :', ml_db['Titre'])
             submit = st.form_submit_button(label='Rechercher')
 
