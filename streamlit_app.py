@@ -194,7 +194,7 @@ st.sidebar.title('Projet MORE')
 st.sidebar.subheader('Navigation')
 
 categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Présentation de la base de données',
-                                           'Femmes et cinéma', 'Les Top', 'Quoi voir ?'))
+                                           'Femmes et cinéma', 'Les Top 10', 'Quoi voir ?'))
 if categorie == 'Quoi voir ?':
     sub_categorie = st.sidebar.radio("Machine Learning", ('Recommandation de films',
                                                           'Rétrospectives',
@@ -1031,8 +1031,8 @@ elif categorie == 'Femmes et cinéma':
                  "Les rôles ne sont tenus que par des hommes.")
 
 
-elif categorie == 'Les Top':
-    st.title('Les Top')
+elif categorie == 'Les Top 10':
+    st.title('Les Top 10')
 
     st.write("""
     Classement selon les données présentes sur la **IMDb**
