@@ -59,13 +59,13 @@ Un scraping de la [page **Wikipedia** de Netflix](https://en.wikipedia.org/wiki/
 
 ## Status
 
-Projet clôture et présenté le *07/04/2021*.
+Projet clôturé et présenté le *07/04/2021*.
 
 ## La Team
 
 Le projet a été réalisé par les élèves de la **Wild Code School** : 
-  - Ahlem Touati
-  - Fanyim Dingue
-  - Michael Kohler
-  - [Raphaël Da Silva](https://github.com/raphadasilva)
-  - Soufiane Imadanayen 
+- Ahlem Touati
+- Fanyim Dingue
+- Michael Kohler
+- [Raphaël Da Silva](https://github.com/raphadasilva)
+- Soufiane Imadanayen 
