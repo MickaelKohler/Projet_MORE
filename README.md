@@ -36,19 +36,19 @@ https://share.streamlit.io/mickaelkohler/projet_more/main
 
 ### Captures d’écran
 
-![register](./images/register.png) ![register](./Ressources/screenshot1.png) ![register](./images/register.png) ![register](./Ressources/screenshot2.png)
-![register](./images/register.png) ![register](./Ressources/screenshot3.png) ![register](./images/register.png) ![register](./Ressources/screenshot4.png)
+![screenshot1](./Ressources/screenshot1.png) ![screenshot2](./Ressources/screenshot2.png)
+![screenshot3](./Ressources/screenshot3.png) ![screenshot4](./Ressources/screenshot4.png)
 
 ## Technologies 
 
 Projet fait entièrement en **Python**
 
 Utilisations des librairies suivantes : 
-	- Pandas
-	- Sklearn
-	- Plotly
-	- BeautifulSoup
-	- Streamlit
+ - Pandas
+ - Sklearn
+ - Plotly
+ - BeautifulSoup
+ - Streamlit
 
 ## Bases de données 
 
@@ -63,8 +63,8 @@ Projet clôture et présenté le *07/04/2021*.
 ## La Team
 
 Le projet a été réalisé par les élèves de la **Wild Code School** : 
-	- Ahlem Touati
-	- Fanyim Dingue
-	- Michael Kohler
-	- [Raphaël Da Silva](https://github.com/raphadasilva)
-	- Soufiane Imadanayen 
+- Ahlem Touati
+- Fanyim Dingue
+- Michael Kohler
+- [Raphaël Da Silva](https://github.com/raphadasilva)
+- Soufiane Imadanayen 
