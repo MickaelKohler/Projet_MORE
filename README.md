@@ -14,7 +14,7 @@ _Creation d’un WebApp de recommandation de films_
 
 Le _Projet MORE_ est né lors d’un projet d’école organisé par la __Wild Code School__
 
-L’objectif de fournir les outils d’analyse d’une base de données de films, fournie par __IMDB__ et s’articule autour de 4 thèmes :
+L’objectif de fournir les outils d’analyse d’une base de données de films, fournie par __IMDB__ et s’articule autour de 4 sections :
 - Une rapide présentation de la base de données 
 - Une étude de la place de la femme dans le cinéma
 - différents TOP10 par années et genre. 
