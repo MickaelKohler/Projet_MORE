@@ -3,14 +3,14 @@ _Creation d’un WebApp de recommandation de films_
 
 ## Sommaire
 
-* [Les origines du projet](#origines-du-projet)
+* [Origine du projet](#origine-du-projet)
 * [Screenshots](#interface)
 * [Technologies](#technologies)
 * [Bases de Données](#bases-de-données)
 * [Status](#status)
 * [La Team](#la-team)
 
-## Origines du projet
+## Origine du projet
 
 Le _Projet MORE_ est né lors d’un projet d’école organisé par la __Wild Code School__
 
@@ -44,11 +44,11 @@ https://share.streamlit.io/mickaelkohler/projet_more/main
 Projet fait entièrement en **Python**
 
 Utilisations des librairies suivantes : 
-	* Pandas
-	* Sklearn
-	* Plotly
-	* BeautifulSoup
-	* Streamlit
+	*Pandas
+	*Sklearn
+	*Plotly
+	*BeautifulSoup
+	*Streamlit
 
 ## Bases de données 
 
@@ -63,8 +63,8 @@ Projet clôture et présenté le *07/04/2021*.
 ## La Team
 
 Le projet a été réalisé par les élèves de la **Wild Code School** : 
-	* Ahlem Touati
-	* Fanyim Dingue
-	* Michael Kohler
-	* [Raphaël Da Silva](https://github.com/raphadasilva)
-	* Soufiane Imadanayen 
+	*Ahlem Touati
+	*Fanyim Dingue
+	*Michael Kohler
+	*[Raphaël Da Silva](https://github.com/raphadasilva)
+	*Soufiane Imadanayen 
