@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.preprocessing import PowerTransformer, StandardScaler
+from sklearn.preprocessing import PowerTransformer
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
@@ -193,12 +193,12 @@ st.markdown("""
 st.sidebar.title('Projet MORE')
 st.sidebar.subheader('Navigation')
 
-categorie = st.sidebar.radio("Categorie", ("Qu'est-ce que le projet MORE ?", 'Présentation de la base de données',
+categorie = st.sidebar.radio("Catégorie", ("Qu'est-ce que le projet MORE ?", 'Présentation de la base de données',
                                            'Femmes et cinéma', 'Les Top 10', 'Quoi voir ?'))
 if categorie == 'Quoi voir ?':
     sub_categorie = st.sidebar.radio("Machine Learning", ('Recommandation de films',
                                                           'Rétrospectives',
-                                                          'Probabilités d\'aimer ce film'))
+                                                          'Probabilité d\'aimer ce film'))
 
 st.sidebar.title(' ')
 option = st.sidebar.beta_expander("Options")
@@ -274,7 +274,7 @@ if categorie == "Qu'est-ce que le projet MORE ?":
     st.title(" ")
     st.subheader('I need MORE !')
     col1, col2, col3 = st.beta_columns(3)
-    with col2 :
+    with col2:
         st.image('https://github.com/MickaelKohler/Projet_MORE/raw/main/Ressources/sub.png')
 
 
@@ -351,7 +351,7 @@ elif categorie == 'Présentation de la base de données':
                 font=dict(size=12)),
             font=dict(family="IBM Plex Sans"),
             title="<b>Proportion des types de productions au fil du temps</b>",
-            margin = dict(l=40, r=40, b=50)
+            margin=dict(l=40, r=40, b=50)
         )
         st.plotly_chart(fig, use_container_width=True)
     if show:
@@ -494,16 +494,16 @@ elif categorie == 'Présentation de la base de données':
     with col1:
         st.title("")
         st.markdown(
-        """
-        **Est-ce que c’était vraiment mieux avant ?** Globalement... **non**.
-        Le pourcentage de bons films par rapport au total des oeuvres se situe en moyenne entre 8% et 10%. 
-        
-        Petite exception pour les années 1990 et 2000 qui bénéficient de 2 points supplémentaires. 
-        
-        Pour la suite, :
-        * la **courbe bleue** représentera le données moyennes pour **tous les films**, 
-        * la **courbe orange** représentera les données moyennes pour les **_bons films_**.
-        """)
+            """
+            **Est-ce que c’était vraiment mieux avant ?** Globalement... **non**.
+            Le pourcentage de bons films par rapport au total des oeuvres se situe en moyenne entre 8% et 10%. 
+            
+            Petite exception pour les années 1990 et 2000 qui bénéficient de 2 points supplémentaires. 
+            
+            Pour la suite :
+            * la **courbe bleue** représentera le données moyennes pour **tous les films**, 
+            * la **courbe orange** représentera les données moyennes pour les **_bons films_**.
+            """)
     with col2:
         # percent of best
         total_decade = data.groupby((data['Année'] // 10) * 10).count()
@@ -679,10 +679,10 @@ elif categorie == 'Présentation de la base de données':
     )
 
     rate_genres = temp_tab.pivot_table(values='Note', index=['Genres'], aggfunc='mean')
-    rate_genres = rate_genres.sort_values('Note', ascending = False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
+    rate_genres = rate_genres.sort_values('Note', ascending=False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
 
     pop_genres = temp_tab.pivot_table(values='Votes', index=['Genres'], aggfunc='mean')
-    pop_genres = pop_genres.sort_values('Votes',ascending=False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
+    pop_genres = pop_genres.sort_values('Votes', ascending=False).drop(index=['\\N', 'Adult', 'Reality-TV', 'Short'])
 
     color_rate = ['deepskyblue']*15
     color_rate[9] = 'coral'
@@ -1044,7 +1044,7 @@ elif categorie == 'Les Top 10':
     col1, col2 = st.beta_columns([2, 1])
     with col2:
         TOP_choice = st.radio("Type de Top",
-                                     ('Par décennie', 'Par année', 'Toutes années confondues'))
+                              ('Par décennie', 'Par année', 'Toutes années confondues'))
         select_genres = st.checkbox('Sélectionner un genre de film')
         expander = st.beta_expander("indice MORE ?")
         expander.markdown("**L'indice MORE** permet de lier le nombre de votes et la note d'un film "
@@ -1189,8 +1189,8 @@ elif categorie == 'Quoi voir ?':
             for cast_rang in range(8, 11):
                 search = ml_db[ml_db['Titre'] == movie_selected]
                 fil_data = ml_db[(ml_db['main_role'] == search.iloc[0, cast_rang]) |
-                                  (ml_db['second_role'] == search.iloc[0, cast_rang]) |
-                                  (ml_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
+                                 (ml_db['second_role'] == search.iloc[0, cast_rang]) |
+                                 (ml_db['third_role'] == search.iloc[0, cast_rang])].sort_values('indice MORE').reset_index()
 
                 if fil_data.shape[0] > 2:
                     X = ml_data(fil_data)
@@ -1282,7 +1282,7 @@ elif categorie == 'Quoi voir ?':
                 st.dataframe(movies_selection)
 
 
-    if sub_categorie == 'Probabilités d\'aimer ce film':
+    if sub_categorie == 'Probabilité d\'aimer ce film':
         st.title('Est-ce que ce film va me plaire ?')
         st.subheader('Ne perdez plus votre temps avec des films qui ne vous correspondent pas')
         st.markdown(
@@ -1344,6 +1344,6 @@ elif categorie == 'Quoi voir ?':
             with col2:
                 col2.image(picture(predict_data[predict_data['Titre'] == movie_selected]))
 
-            if show :
+            if show:
                 st.title(' ')
                 st.dataframe(predict_data.sort_values('proba', ascending=False).reset_index())
