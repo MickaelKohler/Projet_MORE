@@ -7,7 +7,7 @@ _Creation d’un WebApp de recommandation de films_
 * [Screenshots](#interface)
 * [Technologies](#technologies)
 * [Bases de Données](#bases-de-données)
-* [Status](#status)
+* [Statut](#statut)
 * [La Team](#la-team)
 
 ## Origine du projet
@@ -57,7 +57,7 @@ Les [bases de données de **IMDB**](https://www.imdb.com/interfaces/) ont été 
 
 Un scraping de la [page **Wikipedia** de Netflix](https://en.wikipedia.org/wiki/Lists_of_Netflix_original_films) a été fait pour identifier les films Netflix. 
 
-## Status
+## Statut
 
 Projet clôturé et présenté le *07/04/2021*.
 
