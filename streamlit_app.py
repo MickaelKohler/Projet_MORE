@@ -201,7 +201,7 @@ if categorie == 'Quoi voir ?':
                                                           'Probabilité d\'aimer ce film'))
 
 st.sidebar.title(' ')
-option = st.sidebar.beta_expander("Options")
+option = st.sidebar.expander("Options")
 option.markdown(
     """
     L'option _Montre moi la data_ affichera les données 
@@ -209,7 +209,7 @@ option.markdown(
     """)
 show = option.checkbox('Montre moi la data')
 
-expander = st.sidebar.beta_expander("Sources")
+expander = st.sidebar.expander("Sources")
 expander.markdown(
     """
     [Base de donnée imdb](https://www.imdb.com/interfaces/) : N'ont été retenus que les films 
@@ -227,11 +227,11 @@ expander.info('Projet de la **WildCodeSchool** livré le 07/05/2021')
 ##########
 
 # modifier selon la localisation de la BD
-REPRO_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/5229e2c46ed10881eb3b9e372cd4c0198c4b15d5/repro.zip'
-FR_ml_db = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/fr_mov.csv'
-ML_DB = 'https://github.com/MickaelKohler/Projet_MORE/raw/main/mldb.csv'
-country = 'https://raw.githubusercontent.com/MickaelKohler/Projet_MORE/main/country.csv'
-prod = 'https://raw.githubusercontent.com/MickaelKohler/Projet_MORE/main/cum_prod.csv'
+REPRO_DB = './data/repro.zip'
+FR_ml_db = './data/fr_mov.csv'
+ML_DB = './data/mldb.csv'
+country = './data/country.csv'
+prod = './data/cum_prod.csv'
 
 data = load_data(FR_ml_db)
 data_crew = load_data(REPRO_DB)
@@ -273,9 +273,9 @@ if categorie == "Qu'est-ce que le projet MORE ?":
 
     st.title(" ")
     st.subheader('I need MORE !')
-    col1, col2, col3 = st.beta_columns(3)
+    col1, col2, col3 = st.columns(3)
     with col2:
-        st.image('https://github.com/MickaelKohler/Projet_MORE/raw/main/Ressources/sub.png')
+        st.image('./Ressources/sub.png')
 
 
 elif categorie == 'Présentation de la base de données':
@@ -299,7 +299,7 @@ elif categorie == 'Présentation de la base de données':
     )
 
     prod = load_df(prod)
-    col1, col2 = st.beta_columns([2, 1])
+    col1, col2 = st.columns([2, 1])
     with col2:
         st.title(' ')
         st.markdown(
@@ -398,7 +398,7 @@ elif categorie == 'Présentation de la base de données':
     fig.update_geos(bgcolor='rgba(0,0,0,0)')
 
     if show:
-        col1, col2 = st.beta_columns([3, 1])
+        col1, col2 = st.columns([3, 1])
         with col1:
             st.plotly_chart(fig, use_container_width=True)
         with col2:
@@ -421,7 +421,7 @@ elif categorie == 'Présentation de la base de données':
         Regardons la répartition des notes moyennes et du nombre de votes de tous les films.
         """)
 
-    col1, col2 = st.beta_columns(2)
+    col1, col2 = st.columns(2)
     with col1:
         fig = px.box(data, y="Note", hover_data=["Titre"], notched=True, color_discrete_sequence=['deepskyblue'])
         st.plotly_chart(fig, use_container_width=True)
@@ -475,7 +475,7 @@ elif categorie == 'Présentation de la base de données':
                             ],
                             format_func=lambda option: option["name"]
                             )
-    filter_expand = st.beta_expander('Personnaliser le filtre')
+    filter_expand = st.expander('Personnaliser le filtre')
     with filter_expand:
         rating_filter = st.slider('Selectionnez une plage de notes', 0, 10, (defaults['min_rate'],
                                                                              defaults['max_rate']))
@@ -490,7 +490,7 @@ elif categorie == 'Présentation de la base de données':
     else:
         max_pop = tick_max
 
-    col1, col2 = st.beta_columns(2)
+    col1, col2 = st.columns(2)
     with col1:
         st.title("")
         st.markdown(
@@ -526,7 +526,7 @@ elif categorie == 'Présentation de la base de données':
                           height=350)
         st.plotly_chart(fig, use_container_width=True)
     if show:
-        col1, col2 = st.beta_columns(2)
+        col1, col2 = st.columns(2)
         col2.dataframe(percent_best)
 
     # Runtime
@@ -557,7 +557,7 @@ elif categorie == 'Présentation de la base de données':
                       spikedistance=1000,
                       margin=dict(l=30, r=30, b=30))
     if show:
-        col1, col2 = st.beta_columns([3, 1])
+        col1, col2 = st.columns([3, 1])
         with col1:
             st.plotly_chart(fig, use_container_width=True)
         with col2:
@@ -596,7 +596,7 @@ elif categorie == 'Présentation de la base de données':
                       margin=dict(l=30, r=30, b=30))
 
     if show:
-        col1, col2 = st.beta_columns([3, 1])
+        col1, col2 = st.columns([3, 1])
         with col1:
             st.plotly_chart(fig, use_container_width=True)
         with col2:
@@ -656,7 +656,7 @@ elif categorie == 'Présentation de la base de données':
     fig.update_yaxes(title=None, showticklabels=False)
 
     if show:
-        col1, col2 = st.beta_columns([3, 1])
+        col1, col2 = st.columns([3, 1])
         with col1:
             st.plotly_chart(fig, use_container_width=True)
         with col2:
@@ -711,7 +711,7 @@ elif categorie == 'Présentation de la base de données':
     fig_pop.update_xaxes(autorange="reversed",
                          title='Nombre de votes moyen par catégorie de films')
 
-    col1, col2 = st.beta_columns(2)
+    col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(fig_rate, use_container_width=True)
         if show:
@@ -726,7 +726,7 @@ elif categorie == 'Femmes et cinéma':
     data_crew = load_data(REPRO_DB)
     actors = data_crew[data_crew['category'].isin(['actor', 'actress'])]
 
-    col1, col2 = st.beta_columns(2)
+    col1, col2 = st.columns(2)
     with col1:
         st.title('La place des femmes dans le cinéma')
         st.title(' ')
@@ -899,7 +899,7 @@ elif categorie == 'Femmes et cinéma':
                             ],
                             format_func=lambda option: option["name"]
                             )
-    filter_expand = st.beta_expander('Détails du filtre')
+    filter_expand = st.expander('Détails du filtre')
     with filter_expand:
         min_rate = st.slider('Selectionnez une note minimale', 0, 10, defaults['min_rate'])
         min_pop = st.slider('Selectionnez un nombre de votes minimal ', tick_min, tick_max, defaults['min_vote'])
@@ -907,7 +907,7 @@ elif categorie == 'Femmes et cinéma':
 
     try:
         # proportion per movies
-        col1, col2 = st.beta_columns(2)
+        col1, col2 = st.columns(2)
         with col1:
 
             # Mean percent actress in each movie
@@ -974,7 +974,7 @@ elif categorie == 'Femmes et cinéma':
                 {round(100 - ((nb_vote_W * 100) / nb_votes_M)) if nb_vote_W > 0 else 100 } %**.
                 """)
 
-        col1, col2 = st.beta_columns(2)
+        col1, col2 = st.columns(2)
         with col1:
             best_actors = fav_filter(actors)
             percent = best_actors[best_actors['Ordre'] == 1].value_counts('category', normalize=True)
@@ -1041,12 +1041,12 @@ elif categorie == 'Les Top 10':
     data = load_data(REPRO_DB)
 
     st.title(' ')
-    col1, col2 = st.beta_columns([2, 1])
+    col1, col2 = st.columns([2, 1])
     with col2:
         TOP_choice = st.radio("Type de Top",
                               ('Par décennie', 'Par année', 'Toutes années confondues'))
         select_genres = st.checkbox('Sélectionner un genre de film')
-        expander = st.beta_expander("indice MORE ?")
+        expander = st.expander("indice MORE ?")
         expander.markdown("**L'indice MORE** permet de lier le nombre de votes et la note d'un film "
                           "pour en retirer un indice de popularité. Plus l'indice est élevée (de 1 à 42) "
                           "plus le film est populaire. "
@@ -1177,7 +1177,7 @@ elif categorie == 'Quoi voir ?':
             reco = reco.loc[ml_db[ml_db['Titre'] == movie_selected].index]
 
             st.subheader(f'_Parce que vous appreciez **{movie_selected}**_')
-            cols = st.beta_columns(4)
+            cols = st.columns(4)
             for i, col in enumerate(cols):
                 index_mov = ml_db[ml_db.index == reco.iloc[0, i+1]][['tconst', 'Titre']]
                 col.subheader(index_mov.iloc[0, 1])
@@ -1197,13 +1197,13 @@ elif categorie == 'Quoi voir ?':
                     y = fil_data['Note'].round(0)
 
                     modelMORE = KNeighborsClassifier(weights='distance',
-                                                     n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5else 5).fit(X, y)
+                                                     n_neighbors=fil_data.shape[0] if fil_data.shape[0] < 5 else 5).fit(X, y)
 
                     new_row = fil_data[fil_data['Titre'] == movie_selected]
                     reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
 
                     st.subheader(f'_Parce que vous appreciez **{search.iloc[0, cast_rang]}**_')
-                    cols = st.beta_columns(fil_data.shape[0] - 1 if fil_data.shape[0] < 5 else 4)
+                    cols = st.columns(fil_data.shape[0] - 1 if fil_data.shape[0] < 5 else 4)
                     for i, col in enumerate(cols):
                         index_mov = fil_data[fil_data.index == reco.iloc[i+1]][['tconst', 'Titre']]
                         col.subheader(index_mov.iloc[0, 1])
@@ -1225,7 +1225,7 @@ elif categorie == 'Quoi voir ?':
                 reco = pd.DataFrame(data=modelMORE.kneighbors(X, return_distance=False)).iloc[new_row.index[0]]
 
                 st.subheader(f'_Parce que vous appreciez **{search.iloc[0, 7]}** à la réalisation_')
-                cols = st.beta_columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
+                cols = st.columns(fil_data.shape[0]-1 if fil_data.shape[0] < 5 else 4)
                 for i, col in enumerate(cols):
                     index_mov = fil_data[fil_data.reset_index().index == reco.iloc[i+1]][['tconst', 'Titre']]
                     col.subheader(index_mov.iloc[0, 1])
@@ -1271,7 +1271,7 @@ elif categorie == 'Quoi voir ?':
             # class retrospective
             movies_selection = Retrospective(film=movie, type_retro=retro).propo_retro()
             st.subheader('Pour votre rétrospective, nous vous proposons les films suivants : ')
-            cols = st.beta_columns(len(movies_selection))
+            cols = st.columns(len(movies_selection))
             for i, col in enumerate(cols):
                 index_mov = ml_db[ml_db['tconst'] == movies_selection.iloc[i, 0]][['tconst', 'Titre']]
                 col.subheader(index_mov.iloc[0, 1])
@@ -1336,7 +1336,7 @@ elif categorie == 'Quoi voir ?':
             predict_data["proba"] = (prediction[:, 1] * 100).round(2)
 
             st.title(' ')
-            col1, col2 = st.beta_columns([2, 1])
+            col1, col2 = st.columns([2, 1])
             with col1:
                 col1.title(' ')
                 col1.subheader(f"Vous avez **{predict_data[predict_data['Titre'] == movie_selected].iloc[0,13]} %** "
